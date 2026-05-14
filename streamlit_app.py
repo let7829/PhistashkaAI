@@ -20,7 +20,7 @@ if prompt := st.chat_input("Ask me anything!"):
 
     with st.chat_message("assistant"):
         # This uses the free Gemini model
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('models/gemini-1.5-flash')
         response = model.generate_content(prompt)
         st.markdown(response.text)
         st.session_state.messages.append({"role": "assistant", "content": response.text})
