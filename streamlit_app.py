@@ -13,14 +13,21 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Ask me anything!"):
+if prompt := st.chat_input("Say hello!"):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
-        # This uses the free Gemini model
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
-        response = model.generate_content(prompt)
-        st.markdown(response.text)
-        st.session_state.messages.append({"role": "assistant", "content": response.text})
+        try:
+            model = genai.GenerativeModel('models/gemini-1.5-flash')
+            response = model.generate_content(prompt)
+            
+            if response.text:
+                st.markdown(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+            else:
+                st.error("Empty response. Check safety settings.")
+                
+        except Exception as e:
+            st.error(f"Error: {e}")
