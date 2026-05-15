@@ -87,7 +87,7 @@ random.seed(current_interval)
 placeholder_text = random.choice(phrases)
 random.seed()
 
-uploaded_file = st.file_uploader("🖼", type=["png", "jpg", "jpeg", "webp"], label_visibility="collapsed")
+uploaded_file = st.file_uploader("🖼", type=["image"], label_visibility="collapsed")
 if uploaded_file:
     st.image(uploaded_file, width=150)
 
