@@ -8,32 +8,30 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Make chat input row flex with + button */
-    .stChatInputContainer {
-        display: flex !important;
-        align-items: center !important;
-        gap: 8px !important;
+    .stPopover {
+        position: fixed;
+        bottom: 34px;
+        left: 20px;
+        z-index: 1000;
     }
-
-    /* Style the popover button to look like it's inside the bar */
-    div[data-testid="stPopover"] {
-        order: -1;
-    }
-    div[data-testid="stPopover"] > button {
-        height: 42px !important;
-        width: 42px !important;
+    .stPopover > button {
         border-radius: 10px !important;
-        background: #262730 !important;
-        border: 1px solid #565869 !important;
+        width: 42px !important;
+        height: 42px !important;
+        background-color: #262730 !important;
+        border: 1px solid #464b5d !important;
+        font-weight: bold !important;
         color: white !important;
-        font-size: 20px !important;
-        padding: 0 !important;
+        font-size: 18px !important;
     }
-    /* Popover opens upward */
+    .stChatInputContainer > div {
+        margin-left: 55px !important;
+    }
     div[data-testid="stPopoverBody"] {
-        bottom: 60px !important;
+        bottom: 80px !important;
         top: auto !important;
-        left: 0 !important;
+        left: 10px !important;
+        position: fixed !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -51,7 +49,7 @@ if "pending_doc_text" not in st.session_state:
 
 with st.sidebar:
     st.header("Chats")
-    if st.button("➕ New Chat"):
+    if st.button("New Chat"):
         new_name = f"Chat {len(st.session_state.all_chats) + 1}"
         st.session_state.all_chats[new_name] = []
         st.session_state.current_chat = new_name
@@ -64,47 +62,33 @@ with st.sidebar:
 
 messages = st.session_state.all_chats[st.session_state.current_chat]
 
-# Display chat history
 for message in messages:
     with st.chat_message(message["role"]):
         if message.get("image_b64"):
             st.image(base64.b64decode(message["image_b64"]))
         st.markdown(message["content"])
 
-# Show pending attachment preview above input
 if st.session_state.pending_image_b64:
-    st.info("🖼️ Image attached — send your message!")
+    st.info("Image attached — send your message!")
 if st.session_state.pending_doc_text:
-    st.info("📄 File attached — send your message!")
+    st.info("File attached — send your message!")
 
-# --- [+] Popover + Chat Input side by side ---
-col1, col2 = st.columns([1, 11])
+with st.popover("➕"):
+    st.markdown("**Attach**")
+    img_file = st.file_uploader("Image", type=["png", "jpg", "jpeg"], key="img_uploader")
+    doc_file = st.file_uploader("File", key="doc_uploader")
+    if img_file:
+        img_bytes = img_file.read()
+        st.session_state.pending_image_b64 = base64.b64encode(img_bytes).decode("utf-8")
+        st.success("Image ready!")
+    if doc_file:
+        try:
+            st.session_state.pending_doc_text = f"[File: {doc_file.name}]\n{doc_file.getvalue().decode('utf-8')}"
+        except:
+            st.session_state.pending_doc_text = f"[Attached file: {doc_file.name}]"
+        st.success("File ready!")
 
-with col1:
-    with st.popover("➕"):
-        st.markdown("**Attach**")
-        img_file = st.file_uploader(
-            "🖼️ Image",
-            type=["png", "jpg", "jpeg"],
-            key="img_uploader"
-        )
-        doc_file = st.file_uploader(
-            "📁 File",
-            key="doc_uploader"
-        )
-        if img_file:
-            img_bytes = img_file.read()
-            st.session_state.pending_image_b64 = base64.b64encode(img_bytes).decode("utf-8")
-            st.success("Image ready!")
-        if doc_file:
-            try:
-                st.session_state.pending_doc_text = f"[File: {doc_file.name}]\n{doc_file.getvalue().decode('utf-8')}"
-            except:
-                st.session_state.pending_doc_text = f"[Attached file: {doc_file.name}]"
-            st.success("File ready!")
-
-with col2:
-    prompt = st.chat_input("Say hello!")
+prompt = st.chat_input("Say hello!")
 
 if prompt:
     image_b64 = st.session_state.pending_image_b64
