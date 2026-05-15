@@ -1,6 +1,5 @@
 import streamlit as st
 from groq import Groq
-import streamlit.components.v1 as components
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
@@ -57,14 +56,18 @@ for i, message in enumerate(messages):
         with st.chat_message("assistant"):
             st.markdown(message["content"])
 
-col_input, col_button = st.columns([0.9, 0.1])
+col_btn, col_input = st.columns([0.08, 0.92])
+
+with col_btn:
+    if st.button("+"):
+        st.session_state.show_box = not st.session_state.get("show_box", False)
+        st.rerun()
 
 with col_input:
     prompt = st.chat_input("Say hello!")
 
-with col_button:
-    with st.popover("➕"):
-        st.write("Menu")
+if st.session_state.get("show_box", False):
+    st.info("Box content here")
 
 if prompt:
     messages.append({"role": "user", "content": prompt})
