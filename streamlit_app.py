@@ -20,7 +20,7 @@ if prompt := st.chat_input("Say hello!"):
 
     with st.chat_message("assistant"):
         try:
-            model = genai.GenerativeModel('models/gemini-2.5-flash')
+            model = genai.GenerativeModel('models/gemini-2.5-flash-lite')
             response = model.generate_content(prompt)
             
             if response.text:
