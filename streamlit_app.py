@@ -1,7 +1,6 @@
 import streamlit as st
 from groq import Groq
 import base64
-import time
 import random
 from datetime import datetime
 
@@ -133,16 +132,17 @@ phrases = [
     "Type here!", "What's on your mind?", "Ask me a question!",
     "Ready to chat!", "Phistashka is here!", "Write something cool!"
 ]
-current_interval = int(time.time() // 30)
-random.seed(current_interval)
-placeholder_text = random.choice(phrases)
-random.seed()
+
+if "placeholder_text" not in st.session_state:
+    st.session_state.placeholder_text = random.choice(phrases)
 
 uploaded_file = st.file_uploader("🖼", type=["image"], label_visibility="collapsed")
 if uploaded_file:
     st.image(uploaded_file, width=150)
 
-if prompt := st.chat_input(placeholder_text):
+if prompt := st.chat_input(st.session_state.placeholder_text):
+    st.session_state.placeholder_text = random.choice(phrases)
+    
     if uploaded_file:
         base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
         msg_content = [
@@ -152,7 +152,7 @@ if prompt := st.chat_input(placeholder_text):
     else:
         msg_content = prompt
 
-    messages.append({"role": "user", "content": msg_content})
+    st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
     st.rerun()
 
 if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
@@ -184,7 +184,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             
             if response_text:
                 st.markdown(response_text)
-                messages.append({"role": "assistant", "content": response_text})
+                st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": response_text})
                 st.rerun()
         except Exception as e:
             st.error(f"Error: {e}")
