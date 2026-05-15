@@ -27,11 +27,7 @@ st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden; display: none !important;}
     .stDeployButton {display:none;}
-    [data-testid="stDecoration"] {display: none !important; visibility: hidden;}
-    [data-testid="stHeader"] {display: none !important; visibility: hidden;}
-    [data-testid="stToolbar"] {display: none !important; visibility: hidden;}
     .lightbox {
         display: none;
         position: fixed;
