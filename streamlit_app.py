@@ -3,8 +3,23 @@ from groq import Groq
 import base64
 import random
 from datetime import datetime
+import json
+import os
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+def load_chats():
+    if os.path.exists("chats.json"):
+        try:
+            with open("chats.json", "r", encoding="utf-8") as f:
+                return json.load(f)
+        except:
+            return {"Chat 1": []}
+    return {"Chat 1": []}
+
+def save_chats():
+    with open("chats.json", "w", encoding="utf-8") as f:
+        json.dump(st.session_state.all_chats, f, ensure_ascii=False, indent=4)
 
 st.set_page_config(page_title="Phistashka AI")
 
@@ -48,11 +63,13 @@ st.markdown("""
 st.title("Phistashka AI")
 
 if "all_chats" not in st.session_state:
-    st.session_state.all_chats = {"Chat 1": []}
+    st.session_state.all_chats = load_chats()
 if "current_chat" not in st.session_state:
-    st.session_state.current_chat = "Chat 1"
+    st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
 if "edit_index" not in st.session_state:
     st.session_state.edit_index = None
+if "editing_chat_name" not in st.session_state:
+    st.session_state.editing_chat_name = None
 
 with st.sidebar:
     st.header("Chats")
@@ -60,14 +77,50 @@ with st.sidebar:
         new_name = f"Chat {len(st.session_state.all_chats) + 1}"
         st.session_state.all_chats[new_name] = []
         st.session_state.current_chat = new_name
+        save_chats()
         st.rerun()
     
     st.divider()
-    for chat_name in st.session_state.all_chats.keys():
-        if st.button(chat_name, key=f"select_{chat_name}"):
-            st.session_state.current_chat = chat_name
-            st.session_state.edit_index = None
-            st.rerun()
+    for chat_name in list(st.session_state.all_chats.keys()):
+        if st.session_state.editing_chat_name == chat_name:
+            col_input, col_save = st.columns([0.7, 0.3])
+            with col_input:
+                new_name = st.text_input("Rename:", value=chat_name, key=f"rename_{chat_name}", label_visibility="collapsed")
+            with col_save:
+                if st.button("💾", key=f"save_name_{chat_name}"):
+                    if new_name and new_name != chat_name:
+                        new_chats = {}
+                        for k, v in st.session_state.all_chats.items():
+                            if k == chat_name:
+                                new_chats[new_name] = v
+                            else:
+                                new_chats[k] = v
+                        st.session_state.all_chats = new_chats
+                        if st.session_state.current_chat == chat_name:
+                            st.session_state.current_chat = new_name
+                        save_chats()
+                    st.session_state.editing_chat_name = None
+                    st.rerun()
+        else:
+            col_chat, col_edit, col_del = st.columns([0.6, 0.2, 0.2])
+            with col_chat:
+                if st.button(chat_name, key=f"select_{chat_name}", use_container_width=True):
+                    st.session_state.current_chat = chat_name
+                    st.session_state.edit_index = None
+                    st.rerun()
+            with col_edit:
+                if st.button("✏️", key=f"edit_title_{chat_name}"):
+                    st.session_state.editing_chat_name = chat_name
+                    st.rerun()
+            with col_del:
+                if st.button("🗑", key=f"del_{chat_name}"):
+                    del st.session_state.all_chats[chat_name]
+                    if not st.session_state.all_chats:
+                        st.session_state.all_chats = {"Chat 1": []}
+                    if st.session_state.current_chat == chat_name or st.session_state.current_chat not in st.session_state.all_chats:
+                        st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
+                    save_chats()
+                    st.rerun()
 
 messages = st.session_state.all_chats[st.session_state.current_chat]
 
@@ -81,6 +134,7 @@ for i, message in enumerate(messages):
                 st.rerun()
             if st.button("↩️", key=f"undo_{i}"):
                 st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
+                save_chats()
                 st.rerun()
         with col_txt:
             with st.chat_message("user"):
@@ -95,6 +149,7 @@ for i, message in enumerate(messages):
                         else:
                             messages[i]["content"] = edit_val
                         st.session_state.all_chats[st.session_state.current_chat] = messages[:i+1]
+                        save_chats()
                         st.session_state.edit_index = None
                         st.rerun()
                 else:
@@ -140,6 +195,7 @@ if prompt := st.chat_input(st.session_state.placeholder_text):
     else:
         msg_content = prompt
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+    save_chats()
     st.rerun()
 
 if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
@@ -150,15 +206,13 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.3-70b-versatile"
             
             current_date = datetime.now().strftime("%B %d, %Y")
-            api_messages = [{"role": "system", "content": f"You are Phistashka AI. Today is {current_date}."}]
+            api_messages = [{"role": "system", "content": f"You are Phistashka AI. Today is {current_date}. You have real-time tracking of the date via your environment configuration."}]
             
             for m in messages:
                 m_content = m["content"]
-                # If we are using the text model, we MUST convert any list content into a string
                 if model == "llama-3.3-70b-versatile" and isinstance(m_content, list):
                     text_part = next((item["text"] for item in m_content if item["type"] == "text"), "")
-                    m_content = f"[User sent an image] {text_part}"
-                
+                    m_content = f"[User previously attached an image] {text_part}"
                 api_messages.append({"role": m["role"], "content": m_content})
             
             completion = client.chat.completions.create(model=model, messages=api_messages)
@@ -166,6 +220,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             if response_text:
                 st.markdown(response_text)
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": response_text})
+                save_chats()
                 st.rerun()
         except Exception as e:
             st.error(f"Error: {e}")
