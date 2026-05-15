@@ -32,7 +32,6 @@ messages = st.session_state.all_chats[st.session_state.current_chat]
 for i, message in enumerate(messages):
     if message["role"] == "user":
         col_btns, col_txt = st.columns([0.15, 0.85])
-        
         with col_btns:
             if st.button("✏️", key=f"edit_{i}"):
                 st.session_state.edit_index = i
@@ -40,7 +39,6 @@ for i, message in enumerate(messages):
             if st.button("↩️", key=f"undo_{i}"):
                 st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
                 st.rerun()
-                
         with col_txt:
             with st.chat_message("user"):
                 if st.session_state.edit_index == i:
@@ -63,18 +61,13 @@ if prompt := st.chat_input("Say hello!"):
 if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
     with st.chat_message("assistant"):
         try:
-            model="llama-3.3-70b-versatile"
-            history = []
-            for m in messages[:-1]:
-                role = "model" if m["role"] == "assistant" else "user"
-                history.append({"role": role, "parts": [m["content"]]})
-            
-            chat = model.start_chat(history=history)
-            response = chat.send_message(messages[-1]["content"])
-            
-            if response.text:
-                st.markdown(response.text)
-                messages.append({"role": "assistant", "content": response.text})
-                st.rerun()
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",
+                messages=[{"role": m["role"], "content": m["content"]} for m in messages]
+            )
+            response_text = completion.choices[0].message.content
+            st.markdown(response_text)
+            messages.append({"role": "assistant", "content": response_text})
+            st.rerun()
         except Exception as e:
             st.error(f"Error: {e}")
