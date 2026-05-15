@@ -6,73 +6,58 @@ genai.configure(api_key=api_key)
 
 st.title("Phistashka AI")
 
-if "all_chats" not in st.session_state:
-    st.session_state.all_chats = {"Chat 1": []}
-if "current_chat" not in st.session_state:
-    st.session_state.current_chat = "Chat 1"
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+if "edit_index" not in st.session_state:
+    st.session_state.edit_index = None
 
-with st.sidebar:
-    st.header("Chat Management")
-    
-    if st.button("➕ New Chat"):
-        new_name = f"Chat {len(st.session_state.all_chats) + 1}"
-        st.session_state.all_chats[new_name] = []
-        st.session_state.current_chat = new_name
-        st.rerun()
-
-    st.divider()
-
-    if st.session_state.all_chats:
-        chat_list = list(st.session_state.all_chats.keys())
-        choice = st.selectbox("Select Chat", chat_list, index=chat_list.index(st.session_state.current_chat))
-        st.session_state.current_chat = choice
-
-    st.divider()
-
-    if st.button("↩️ Undo Last Message"):
-        if st.session_state.all_chats[st.session_state.current_chat]:
-            st.session_state.all_chats[st.session_state.current_chat].pop()
-            if st.session_state.all_chats[st.session_state.current_chat]:
-                st.session_state.all_chats[st.session_state.current_chat].pop()
+for i, message in enumerate(st.session_state.messages):
+    if message["role"] == "user":
+        col1, col2, col3 = st.columns([0.07, 0.07, 0.86])
+        
+        if col1.button("📝", key=f"edit_{i}"):
+            st.session_state.edit_index = i
             st.rerun()
-
-    st.divider()
-    st.subheader("Edit Messages")
-    msg_index = st.number_input("Message Index", min_value=0, max_value=max(0, len(st.session_state.all_chats[st.session_state.current_chat])-1), step=1)
-    new_text = st.text_area("Edit Text")
-    if st.button("Update Message"):
-        if st.session_state.all_chats[st.session_state.current_chat]:
-            st.session_state.all_chats[st.session_state.current_chat][msg_index]["content"] = new_text
+            
+        if col2.button("↩️", key=f"undo_{i}"):
+            st.session_state.messages = st.session_state.messages[:i]
             st.rerun()
-
-messages = st.session_state.all_chats[st.session_state.current_chat]
-
-for i, message in enumerate(messages):
-    with st.chat_message(message["role"]):
-        st.markdown(f"{message['content']} *(Index: {i})*")
+            
+        with col3:
+            with st.chat_message("user"):
+                if st.session_state.edit_index == i:
+                    edit_input = st.text_input("Edit your message:", value=message["content"], key=f"input_{i}")
+                    if st.button("Save", key=f"save_{i}"):
+                        st.session_state.messages[i]["content"] = edit_input
+                        st.session_state.messages = st.session_state.messages[:i+1]
+                        st.session_state.edit_index = None
+                        st.rerun()
+                else:
+                    st.markdown(message["content"])
+    else:
+        with st.chat_message("assistant"):
+            st.markdown(message["content"])
 
 if prompt := st.chat_input("Say hello!"):
-    messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.rerun()
 
+if st.session_state.messages and st.session_state.messages[-1]["role"] == "user" and st.session_state.edit_index is None:
     with st.chat_message("assistant"):
         try:
             model = genai.GenerativeModel('gemini-2.5-flash-lite')
             
-            formatted_history = []
-            for m in messages[:-1]:
+            history = []
+            for m in st.session_state.messages[:-1]:
                 role = "model" if m["role"] == "assistant" else "user"
-                formatted_history.append({"role": role, "parts": [m["content"]]})
+                history.append({"role": role, "parts": [m["content"]]})
             
-            chat_session = model.start_chat(history=formatted_history)
-            response = chat_session.send_message(prompt)
+            chat = model.start_chat(history=history)
+            response = chat.send_message(st.session_state.messages[-1]["content"])
             
             if response.text:
                 st.markdown(response.text)
-                messages.append({"role": "assistant", "content": response.text})
-            else:
-                st.error("Empty response.")
-                
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
+                st.rerun()
         except Exception as e:
             st.error(f"Error: {e}")
