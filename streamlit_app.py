@@ -32,14 +32,12 @@ messages = st.session_state.all_chats[st.session_state.current_chat]
 
 for i, message in enumerate(messages):
     if message["role"] == "user":
-        col_btn1, col_btn2, col_txt = st.columns([0.1, 0.1, 0.8])
+        col_btns, col_txt = st.columns([0.15, 0.85])
         
-        with col_btn1:
-            if st.button("📝", key=f"edit_{i}"):
+        with col_btns:
+            if st.button("✏️", key=f"edit_{i}"):
                 st.session_state.edit_index = i
                 st.rerun()
-        
-        with col_btn2:
             if st.button("↩️", key=f"undo_{i}"):
                 st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
                 st.rerun()
@@ -66,7 +64,7 @@ if prompt := st.chat_input("Say hello!"):
 if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
     with st.chat_message("assistant"):
         try:
-            model = genai.GenerativeModel('gemini-2.5-flash-lite')
+            model = genai.GenerativeModel('gemini-3.0-flash-lite')
             history = []
             for m in messages[:-1]:
                 role = "model" if m["role"] == "assistant" else "user"
