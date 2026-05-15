@@ -20,8 +20,15 @@ if prompt := st.chat_input("Say hello!"):
 
     with st.chat_message("assistant"):
         try:
-            model = genai.GenerativeModel('models/gemini-2.5-flash-lite')
-            response = model.generate_content(prompt)
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            
+            formatted_history = []
+            for m in st.session_state.messages[:-1]:
+                role = "model" if m["role"] == "assistant" else "user"
+                formatted_history.append({"role": role, "parts": [m["content"]]})
+
+            chat = model.start_chat(history=formatted_history)
+            response = chat.send_message(prompt)
             
             if response.text:
                 st.markdown(response.text)
