@@ -3,15 +3,30 @@ from groq import Groq
 
 st.markdown("""
     <style>
-    footer {visibility: hidden; height: 0;}
+    footer {visibility: hidden;}
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
     .stChatInputContainer {
         padding-bottom: 20px;
-        background-color: transparent;
     }
-    .stButton>button {
-        border-radius: 20px;
+    .stPopover {
+        position: fixed;
+        bottom: 32px;
+        left: 10px;
+        z-index: 1000;
+    }
+    .stPopover > button {
+        border-radius: 50% !important;
+        width: 45px !important;
+        height: 45px !important;
+        background-color: #262730 !important;
+        border: 1px solid #464b5d !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .stChatInputContainer > div {
+        margin-left: 55px !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -47,7 +62,6 @@ messages = st.session_state.all_chats[st.session_state.current_chat]
 for i, message in enumerate(messages):
     if message["role"] == "user":
         col_btns, col_txt = st.columns([0.15, 0.85])
-        
         with col_btns:
             if st.button("✏️", key=f"edit_{i}"):
                 st.session_state.edit_index = i
@@ -55,7 +69,6 @@ for i, message in enumerate(messages):
             if st.button("↩️", key=f"undo_{i}"):
                 st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
                 st.rerun()
-                
         with col_txt:
             with st.chat_message("user"):
                 if st.session_state.edit_index == i:
@@ -71,12 +84,10 @@ for i, message in enumerate(messages):
         with st.chat_message("assistant"):
             st.markdown(message["content"])
 
-with st.container():
-    col_plus, col_void = st.columns([0.1, 0.9])
-    with col_plus:
-        with st.popover("➕"):
-            st.file_uploader("🖼Select image", type=['png', 'jpg', 'jpeg'], key="img_picker")
-            st.file_uploader("📁Select file", key="file_picker")
+with st.popover("➕"):
+    st.markdown("### Attachments")
+    img_file = st.file_uploader("🖼Select image", type=['png', 'jpg', 'jpeg'], key="img_up")
+    doc_file = st.file_uploader("📁Select file", key="doc_up")
 
 prompt = st.chat_input("Say hello!")
 
@@ -92,7 +103,6 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                 messages=[{"role": m["role"], "content": m["content"]} for m in messages]
             )
             response_text = completion.choices[0].message.content
-            
             if response_text:
                 st.markdown(response_text)
                 messages.append({"role": "assistant", "content": response_text})
