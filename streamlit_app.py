@@ -110,7 +110,8 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             last_msg_content = messages[-1]["content"]
             contains_image = isinstance(last_msg_content, list)
             
-            model = "llama-3.2-90b-vision-preview" if contains_image else "llama-3.3-70b-versatile"
+            # THE FIX: Swapped out the decommissioned 90b model string for the working 11b model
+            model = "llama-3.2-11b-vision-preview" if contains_image else "llama-3.3-70b-versatile"
             
             api_messages = []
             for m in messages:
