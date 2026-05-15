@@ -6,30 +6,51 @@ genai.configure(api_key=api_key)
 
 st.title("Phistashka AI")
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+if "all_chats" not in st.session_state:
+    st.session_state.all_chats = {"Chat 1": []}
+if "current_chat" not in st.session_state:
+    st.session_state.current_chat = "Chat 1"
 if "edit_index" not in st.session_state:
     st.session_state.edit_index = None
 
-for i, message in enumerate(st.session_state.messages):
+with st.sidebar:
+    st.header("Chats")
+    if st.button("➕ New Chat"):
+        new_name = f"Chat {len(st.session_state.all_chats) + 1}"
+        st.session_state.all_chats[new_name] = []
+        st.session_state.current_chat = new_name
+        st.rerun()
+    
+    st.divider()
+    for chat_name in st.session_state.all_chats.keys():
+        if st.button(chat_name, key=f"select_{chat_name}"):
+            st.session_state.current_chat = chat_name
+            st.session_state.edit_index = None
+            st.rerun()
+
+messages = st.session_state.all_chats[st.session_state.current_chat]
+
+for i, message in enumerate(messages):
     if message["role"] == "user":
-        col1, col2, col3 = st.columns([0.07, 0.07, 0.86])
+        col_btn1, col_btn2, col_txt = st.columns([0.1, 0.1, 0.8])
         
-        if col1.button("📝", key=f"edit_{i}"):
-            st.session_state.edit_index = i
-            st.rerun()
-            
-        if col2.button("↩️", key=f"undo_{i}"):
-            st.session_state.messages = st.session_state.messages[:i]
-            st.rerun()
-            
-        with col3:
+        with col_btn1:
+            if st.button("📝", key=f"edit_{i}"):
+                st.session_state.edit_index = i
+                st.rerun()
+        
+        with col_btn2:
+            if st.button("↩️", key=f"undo_{i}"):
+                st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
+                st.rerun()
+                
+        with col_txt:
             with st.chat_message("user"):
                 if st.session_state.edit_index == i:
-                    edit_input = st.text_input("Edit your message:", value=message["content"], key=f"input_{i}")
+                    edit_val = st.text_input("Edit:", value=message["content"], key=f"input_{i}")
                     if st.button("Save", key=f"save_{i}"):
-                        st.session_state.messages[i]["content"] = edit_input
-                        st.session_state.messages = st.session_state.messages[:i+1]
+                        messages[i]["content"] = edit_val
+                        st.session_state.all_chats[st.session_state.current_chat] = messages[:i+1]
                         st.session_state.edit_index = None
                         st.rerun()
                 else:
@@ -39,25 +60,24 @@ for i, message in enumerate(st.session_state.messages):
             st.markdown(message["content"])
 
 if prompt := st.chat_input("Say hello!"):
-    st.session_state.messages.append({"role": "user", "content": prompt})
+    messages.append({"role": "user", "content": prompt})
     st.rerun()
 
-if st.session_state.messages and st.session_state.messages[-1]["role"] == "user" and st.session_state.edit_index is None:
+if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
     with st.chat_message("assistant"):
         try:
             model = genai.GenerativeModel('gemini-2.5-flash-lite')
-            
             history = []
-            for m in st.session_state.messages[:-1]:
+            for m in messages[:-1]:
                 role = "model" if m["role"] == "assistant" else "user"
                 history.append({"role": role, "parts": [m["content"]]})
             
             chat = model.start_chat(history=history)
-            response = chat.send_message(st.session_state.messages[-1]["content"])
+            response = chat.send_message(messages[-1]["content"])
             
             if response.text:
                 st.markdown(response.text)
-                st.session_state.messages.append({"role": "assistant", "content": response.text})
+                messages.append({"role": "assistant", "content": response.text})
                 st.rerun()
         except Exception as e:
             st.error(f"Error: {e}")
