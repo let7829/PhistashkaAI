@@ -58,7 +58,7 @@ if prompt := st.chat_input("Say hello!"):
 
     with st.chat_message("assistant"):
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
+            model = genai.GenerativeModel('gemini-2.5-flash-lite')
             
             formatted_history = []
             for m in messages[:-1]:
