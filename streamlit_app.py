@@ -56,49 +56,25 @@ for i, message in enumerate(messages):
         with st.chat_message("assistant"):
             st.markdown(message["content"])
 
-col_btn, col_input = st.columns([0.08, 0.92])
-
-with col_btn:
-    if st.button("+"):
-        st.session_state.show_box = not st.session_state.get("show_box", False)
-        st.rerun()
-
-with col_input:
-    prompt = st.chat_input("Say hello!")
-
-if st.session_state.get("show_box", False):
-    st.info("Box content here")
-
-if prompt:
+if prompt := st.chat_input("Say hello!"):
     messages.append({"role": "user", "content": prompt})
     st.rerun()
 
 if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
     with st.chat_message("assistant"):
         try:
-            model = "llama-3.3-70b-versatile"
-            api_messages = []
+            model="llama-3.3-70b-versatile"
+            history = []
             for m in messages[:-1]:
-                api_messages.append({
-                    "role": m["role"],
-                    "content": m["content"]
-                })
+                role = "model" if m["role"] == "assistant" else "user"
+                history.append({"role": role, "parts": [m["content"]]})
             
-            api_messages.append({
-                "role": "user",
-                "content": messages[-1]["content"]
-            })
+            chat = model.start_chat(history=history)
+            response = chat.send_message(messages[-1]["content"])
             
-            completion = client.chat.completions.create(
-                model=model,
-                messages=api_messages
-            )
-            
-            response_text = completion.choices[0].message.content
-            
-            if response_text:
-                st.markdown(response_text)
-                messages.append({"role": "assistant", "content": response_text})
+            if response.text:
+                st.markdown(response.text)
+                messages.append({"role": "assistant", "content": response.text})
                 st.rerun()
         except Exception as e:
             st.error(f"Error: {e}")
