@@ -1,8 +1,7 @@
 import streamlit as st
-import google.generativeai as genai
+from groq import Groq
 
-api_key = st.secrets["GOOGLE_API_KEY"]
-genai.configure(api_key=api_key)
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 st.title("Phistashka AI")
 
@@ -64,7 +63,7 @@ if prompt := st.chat_input("Say hello!"):
 if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
     with st.chat_message("assistant"):
         try:
-            model = genai.GenerativeModel('gemini-2.5-flash-lite')
+            model="llama-3.3-70b-versatile"
             history = []
             for m in messages[:-1]:
                 role = "model" if m["role"] == "assistant" else "user"
