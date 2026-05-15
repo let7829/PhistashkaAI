@@ -7,7 +7,7 @@ from datetime import datetime
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-st.set_page_config(page_title="Phistashka AI"
+st.set_page_config(page_title="Phistashka AI")
 
 st.markdown("""
     <style>
