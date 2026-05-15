@@ -3,8 +3,48 @@ from groq import Groq
 import base64
 import time
 import random
+from datetime import datetime
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+
+st.set_page_config(page_title="Phistashka AI"
+
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stDeployButton {display:none;}
+    .lightbox {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0,0,0,0.9);
+    }
+    .lightbox:target {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    .lightbox img {
+        max-width: 95%;
+        max-height: 95%;
+        object-fit: contain;
+    }
+    .close-btn {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: white;
+        font-size: 40px;
+        text-decoration: none;
+        font-weight: bold;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 st.title("Phistashka AI")
 
@@ -69,7 +109,18 @@ for i, message in enumerate(messages):
                             if item["type"] == "text":
                                 st.markdown(item["text"])
                             elif item["type"] == "image_url":
-                                st.image(item["image_url"]["url"])
+                                img_url = item["image_url"]["url"]
+                                uid = f"img_{i}"
+                                lb_html = f'''
+                                <a href="#{uid}">
+                                    <img src="{img_url}" width="150" style="border-radius:10px;">
+                                </a>
+                                <div id="{uid}" class="lightbox">
+                                    <a href="#_" class="close-btn">&times;</a>
+                                    <img src="{img_url}">
+                                </div>
+                                '''
+                                st.markdown(lb_html, unsafe_allow_html=True)
                     else:
                         st.markdown(content)
     else:
@@ -112,7 +163,12 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             
             model = "meta-llama/llama-4-scout-17b-16e-instruct" if contains_image else "llama-3.3-70b-versatile"
             
-            api_messages = []
+            current_date = datetime.now().strftime("%B %d, %Y")
+            api_messages = [{
+                "role": "system", 
+                "content": f"You are Phistashka AI. The current date is {current_date}. You do not have live internet access."
+            }]
+            
             for m in messages:
                 api_messages.append({
                     "role": m["role"],
