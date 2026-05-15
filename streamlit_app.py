@@ -8,11 +8,32 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Hide default Streamlit file uploaders */
-    [data-testid="stFileUploader"] { display: none; }
+    /* Make chat input row flex with + button */
+    .stChatInputContainer {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+    }
 
-    .stChatInputContainer > div {
-        margin-left: 0px !important;
+    /* Style the popover button to look like it's inside the bar */
+    div[data-testid="stPopover"] {
+        order: -1;
+    }
+    div[data-testid="stPopover"] > button {
+        height: 42px !important;
+        width: 42px !important;
+        border-radius: 10px !important;
+        background: #262730 !important;
+        border: 1px solid #565869 !important;
+        color: white !important;
+        font-size: 20px !important;
+        padding: 0 !important;
+    }
+    /* Popover opens upward */
+    div[data-testid="stPopoverBody"] {
+        bottom: 60px !important;
+        top: auto !important;
+        left: 0 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -25,8 +46,8 @@ if "current_chat" not in st.session_state:
     st.session_state.current_chat = "Chat 1"
 if "pending_image_b64" not in st.session_state:
     st.session_state.pending_image_b64 = None
-if "pending_image_name" not in st.session_state:
-    st.session_state.pending_image_name = None
+if "pending_doc_text" not in st.session_state:
+    st.session_state.pending_doc_text = None
 
 with st.sidebar:
     st.header("Chats")
@@ -43,103 +64,76 @@ with st.sidebar:
 
 messages = st.session_state.all_chats[st.session_state.current_chat]
 
+# Display chat history
 for message in messages:
     with st.chat_message(message["role"]):
         if message.get("image_b64"):
             st.image(base64.b64decode(message["image_b64"]))
         st.markdown(message["content"])
 
-# --- File uploaders (hidden via CSS, triggered by JS buttons) ---
-img_file = st.file_uploader("image", type=["png", "jpg", "jpeg"], key="img_uploader", label_visibility="collapsed")
-doc_file = st.file_uploader("doc", key="doc_uploader", label_visibility="collapsed")
+# Show pending attachment preview above input
+if st.session_state.pending_image_b64:
+    st.info("🖼️ Image attached — send your message!")
+if st.session_state.pending_doc_text:
+    st.info("📄 File attached — send your message!")
 
-# --- Custom bottom bar with [+] menu ---
-st.markdown("""
-    <style>
-    .upload-bar {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 10px;
-        background: #262730;
-        border: 1px solid #464b5d;
-        border-radius: 12px;
-        margin-bottom: 6px;
-    }
-    .upload-btn {
-        background: #464b5d;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 5px 11px;
-        cursor: pointer;
-        font-size: 16px;
-    }
-    .upload-btn:hover { background: #5a6080; }
-    </style>
-    <div class="upload-bar">
-        <button class="upload-btn" onclick="document.querySelector('[data-testid=stFileUploader] input[type=file]').click()">+</button>
-        <button class="upload-btn" onclick="document.querySelectorAll('[data-testid=stFileUploader] input[type=file]')[1].click()">📁</button>
-    </div>
-""", unsafe_allow_html=True)
+# --- [+] Popover + Chat Input side by side ---
+col1, col2 = st.columns([1, 11])
 
-prompt = st.chat_input("Say hello!")
+with col1:
+    with st.popover("➕"):
+        st.markdown("**Attach**")
+        img_file = st.file_uploader(
+            "🖼️ Image",
+            type=["png", "jpg", "jpeg"],
+            key="img_uploader"
+        )
+        doc_file = st.file_uploader(
+            "📁 File",
+            key="doc_uploader"
+        )
+        if img_file:
+            img_bytes = img_file.read()
+            st.session_state.pending_image_b64 = base64.b64encode(img_bytes).decode("utf-8")
+            st.success("Image ready!")
+        if doc_file:
+            try:
+                st.session_state.pending_doc_text = f"[File: {doc_file.name}]\n{doc_file.getvalue().decode('utf-8')}"
+            except:
+                st.session_state.pending_doc_text = f"[Attached file: {doc_file.name}]"
+            st.success("File ready!")
 
-# Store uploaded image as base64 in session
-if img_file:
-    img_bytes = img_file.read()
-    st.session_state.pending_image_b64 = base64.b64encode(img_bytes).decode("utf-8")
-    st.session_state.pending_image_name = img_file.name
+with col2:
+    prompt = st.chat_input("Say hello!")
 
 if prompt:
     image_b64 = st.session_state.pending_image_b64
-    image_name = st.session_state.pending_image_name
-    context_info = ""
+    context_info = st.session_state.pending_doc_text or ""
 
-    if doc_file:
-        try:
-            context_info = f"\n\n[File: {doc_file.name}]:\n{doc_file.getvalue().decode('utf-8')}"
-        except:
-            context_info = f"\n\n[Attached File: {doc_file.name}]"
-
-    # Build user message
     if image_b64:
-        # Use vision-capable model when image is present
         user_msg_api = {
             "role": "user",
             "content": [
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{image_b64}"
-                    }
-                },
-                {
-                    "type": "text",
-                    "text": prompt + context_info
-                }
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}"}},
+                {"type": "text", "text": prompt + ("\n\n" + context_info if context_info else "")}
             ]
         }
     else:
-        user_msg_api = {"role": "user", "content": prompt + context_info}
+        user_msg_api = {"role": "user", "content": prompt + ("\n\n" + context_info if context_info else "")}
 
-    # Store in chat history (text only for history display)
     messages.append({
         "role": "user",
-        "content": prompt + context_info,
+        "content": prompt + ("\n\n" + context_info if context_info else ""),
         "image_b64": image_b64
     })
 
-    # Clear pending image
     st.session_state.pending_image_b64 = None
-    st.session_state.pending_image_name = None
-
+    st.session_state.pending_doc_text = None
     st.rerun()
 
 if messages and messages[-1]["role"] == "user":
     with st.chat_message("assistant"):
         try:
-            # Build API messages — inject vision message for last user turn if it had an image
             api_messages = []
             for i, m in enumerate(messages):
                 if m.get("image_b64") and i == len(messages) - 1:
@@ -155,10 +149,7 @@ if messages and messages[-1]["role"] == "user":
 
             model = "meta-llama/llama-4-scout-17b-16e-instruct" if messages[-1].get("image_b64") else "llama-3.3-70b-versatile"
 
-            completion = client.chat.completions.create(
-                model=model,
-                messages=api_messages
-            )
+            completion = client.chat.completions.create(model=model, messages=api_messages)
             res = completion.choices[0].message.content
             st.markdown(res)
             messages.append({"role": "assistant", "content": res})
