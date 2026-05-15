@@ -1,6 +1,21 @@
 import streamlit as st
 from groq import Groq
 
+st.markdown("""
+    <style>
+    footer {visibility: hidden; height: 0;}
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    .stChatInputContainer {
+        padding-bottom: 20px;
+        background-color: transparent;
+    }
+    .stButton>button {
+        border-radius: 20px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 st.title("Phistashka AI")
@@ -32,6 +47,7 @@ messages = st.session_state.all_chats[st.session_state.current_chat]
 for i, message in enumerate(messages):
     if message["role"] == "user":
         col_btns, col_txt = st.columns([0.15, 0.85])
+        
         with col_btns:
             if st.button("✏️", key=f"edit_{i}"):
                 st.session_state.edit_index = i
@@ -39,6 +55,7 @@ for i, message in enumerate(messages):
             if st.button("↩️", key=f"undo_{i}"):
                 st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
                 st.rerun()
+                
         with col_txt:
             with st.chat_message("user"):
                 if st.session_state.edit_index == i:
@@ -54,7 +71,16 @@ for i, message in enumerate(messages):
         with st.chat_message("assistant"):
             st.markdown(message["content"])
 
-if prompt := st.chat_input("Say hello!"):
+with st.container():
+    col_plus, col_void = st.columns([0.1, 0.9])
+    with col_plus:
+        with st.popover("➕"):
+            st.file_uploader("🖼Select image", type=['png', 'jpg', 'jpeg'], key="img_picker")
+            st.file_uploader("📁Select file", key="file_picker")
+
+prompt = st.chat_input("Say hello!")
+
+if prompt:
     messages.append({"role": "user", "content": prompt})
     st.rerun()
 
@@ -66,8 +92,10 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                 messages=[{"role": m["role"], "content": m["content"]} for m in messages]
             )
             response_text = completion.choices[0].message.content
-            st.markdown(response_text)
-            messages.append({"role": "assistant", "content": response_text})
-            st.rerun()
+            
+            if response_text:
+                st.markdown(response_text)
+                messages.append({"role": "assistant", "content": response_text})
+                st.rerun()
         except Exception as e:
             st.error(f"Error: {e}")
