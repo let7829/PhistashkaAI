@@ -63,18 +63,29 @@ if prompt := st.chat_input("Say hello!"):
 if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
     with st.chat_message("assistant"):
         try:
-            model="llama-3.3-70b-versatile"
-            history = []
+            model = "llama-3.3-70b-versatile"
+            api_messages = []
             for m in messages[:-1]:
-                role = "model" if m["role"] == "assistant" else "user"
-                history.append({"role": role, "parts": [m["content"]]})
+                api_messages.append({
+                    "role": m["role"],
+                    "content": m["content"]
+                })
             
-            chat = model.start_chat(history=history)
-            response = chat.send_message(messages[-1]["content"])
+            api_messages.append({
+                "role": "user",
+                "content": messages[-1]["content"]
+            })
             
-            if response.text:
-                st.markdown(response.text)
-                messages.append({"role": "assistant", "content": response.text})
+            completion = client.chat.completions.create(
+                model=model,
+                messages=api_messages
+            )
+            
+            response_text = completion.choices[0].message.content
+            
+            if response_text:
+                st.markdown(response_text)
+                messages.append({"role": "assistant", "content": response_text})
                 st.rerun()
         except Exception as e:
             st.error(f"Error: {e}")
