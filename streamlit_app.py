@@ -21,6 +21,7 @@ st.markdown("""
         left: 10px;
         z-index: 9999;
     }
+    
     .stPopover > button {
         border-radius: 12px !important;
         width: 44px !important;
@@ -33,17 +34,21 @@ st.markdown("""
         padding: 0 !important;
         line-height: 1 !important;
     }
+    
     div[data-testid="stPopoverBody"] {
         position: fixed !important;
-        bottom: 90px !important;
         top: auto !important;
+        bottom: 90px !important;
         left: 10px !important;
+        right: auto !important;
         width: 320px !important;
+        max-height: 400px !important;
         background: #1e1f26 !important;
         border: 1px solid #464b5d !important;
         border-radius: 14px !important;
         padding: 12px !important;
         z-index: 99999 !important;
+        overflow-y: auto !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -433,30 +438,4 @@ if prompt:
 
     st.session_state.pending_image_b64 = None
     st.session_state.pending_image_name = None
-    st.session_state.pending_doc_text = None
-    st.rerun()
-
-if messages and messages[-1]["role"] == "user":
-    with st.chat_message("assistant"):
-        try:
-            api_messages = []
-            for i, m in enumerate(messages):
-                if m.get("image_b64") and i == len(messages) - 1:
-                    api_messages.append({
-                        "role": "user",
-                        "content": [
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{m['image_b64']}"}},
-                            {"type": "text", "text": m["content"]}
-                        ]
-                    })
-                else:
-                    api_messages.append({"role": m["role"], "content": m["content"]})
-
-            model = "meta-llama/llama-4-scout-17b-16e-instruct" if messages[-1].get("image_b64") else "llama-3.3-70b-versatile"
-            completion = client.chat.completions.create(model=model, messages=api_messages)
-            res = completion.choices[0].message.content
-            st.markdown(res)
-            messages.append({"role": "assistant", "content": res})
-            st.rerun()
-        except Exception as e:
-            st.error(f"Error: {e}")
+    st.session_state.pending_doc_
