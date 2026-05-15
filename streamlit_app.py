@@ -73,7 +73,6 @@ messages = st.session_state.all_chats[st.session_state.current_chat]
 
 for i, message in enumerate(messages):
     role = message["role"]
-    
     if role == "user":
         col_btns, col_txt = st.columns([0.15, 0.85])
         with col_btns:
@@ -83,22 +82,18 @@ for i, message in enumerate(messages):
             if st.button("↩️", key=f"undo_{i}"):
                 st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
                 st.rerun()
-                
         with col_txt:
             with st.chat_message("user"):
                 content = message["content"]
-                
                 if st.session_state.edit_index == i:
                     text_val = content[0]["text"] if isinstance(content, list) else content
                     edit_val = st.text_input("Edit:", value=text_val, key=f"input_{i}")
-                    
                     if st.button("Save", key=f"save_{i}"):
                         if isinstance(content, list):
                             content[0]["text"] = edit_val
                             messages[i]["content"] = content
                         else:
                             messages[i]["content"] = edit_val
-                            
                         st.session_state.all_chats[st.session_state.current_chat] = messages[:i+1]
                         st.session_state.edit_index = None
                         st.rerun()
@@ -126,13 +121,7 @@ for i, message in enumerate(messages):
         with st.chat_message("assistant"):
             st.markdown(message["content"])
 
-phrases = [
-    "Say hello!", "Say hi!", "Hello!", "Welcome!", "Hi!", 
-    "Say something!", "Hows your day going!", "Greetings!", 
-    "Type here!", "What's on your mind?", "Ask me a question!",
-    "Ready to chat!", "Phistashka is here!", "Write something cool!"
-]
-
+phrases = ["Say hello!", "Say hi!", "Welcome!", "Type here!", "Ready to chat!", "Write something cool!"]
 if "placeholder_text" not in st.session_state:
     st.session_state.placeholder_text = random.choice(phrases)
 
@@ -142,7 +131,6 @@ if uploaded_file:
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(phrases)
-    
     if uploaded_file:
         base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
         msg_content = [
@@ -151,7 +139,6 @@ if prompt := st.chat_input(st.session_state.placeholder_text):
         ]
     else:
         msg_content = prompt
-
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
     st.rerun()
 
@@ -159,29 +146,23 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
     with st.chat_message("assistant"):
         try:
             last_msg_content = messages[-1]["content"]
-            contains_image = isinstance(last_msg_content, list)
-            
-            model = "meta-llama/llama-4-scout-17b-16e-instruct" if contains_image else "llama-3.3-70b-versatile"
+            current_is_image = isinstance(last_msg_content, list)
+            model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.3-70b-versatile"
             
             current_date = datetime.now().strftime("%B %d, %Y")
-            api_messages = [{
-                "role": "system", 
-                "content": f"You are Phistashka AI. The current date is {current_date}. You do not have live internet access."
-            }]
+            api_messages = [{"role": "system", "content": f"You are Phistashka AI. Today is {current_date}."}]
             
             for m in messages:
-                api_messages.append({
-                    "role": m["role"],
-                    "content": m["content"]
-                })
+                m_content = m["content"]
+                # If we are using the text model, we MUST convert any list content into a string
+                if model == "llama-3.3-70b-versatile" and isinstance(m_content, list):
+                    text_part = next((item["text"] for item in m_content if item["type"] == "text"), "")
+                    m_content = f"[User sent an image] {text_part}"
+                
+                api_messages.append({"role": m["role"], "content": m_content})
             
-            completion = client.chat.completions.create(
-                model=model,
-                messages=api_messages
-            )
-            
+            completion = client.chat.completions.create(model=model, messages=api_messages)
             response_text = completion.choices[0].message.content
-            
             if response_text:
                 st.markdown(response_text)
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": response_text})
