@@ -64,7 +64,7 @@ if prompt := st.chat_input("Say hello!"):
 if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
     with st.chat_message("assistant"):
         try:
-            model = genai.GenerativeModel('gemini-2-flash')
+            model = genai.GenerativeModel('gemini-2.5-flash-lite')
             history = []
             for m in messages[:-1]:
                 role = "model" if m["role"] == "assistant" else "user"
