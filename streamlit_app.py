@@ -79,19 +79,19 @@ for i, message in enumerate(messages):
 phrases = [
     "Say hello!", "Say hi!", "Hello!", "Welcome!", "Hi!", 
     "Say something!", "Hows your day going!", "Greetings!", 
-    "Type here!", "What's on your mind?", "Ask me a question!"
+    "Type here!", "What's on your mind?", "Ask me a question!",
+    "Ready to chat!", "Phistashka is here!", "Write something cool!"
 ]
 current_interval = int(time.time() // 30)
 random.seed(current_interval)
 placeholder_text = random.choice(phrases)
 random.seed()
 
-uploaded_file = st.file_uploader("🖼 Upload Photo (Optional)", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+uploaded_file = st.file_uploader("🖼", type=["png", "jpg", "jpeg", "webp"], label_visibility="collapsed")
 if uploaded_file:
-    st.image(uploaded_file, caption="Preview", width=150)
+    st.image(uploaded_file, width=150)
 
 if prompt := st.chat_input(placeholder_text):
-    
     if uploaded_file:
         base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
         msg_content = [
@@ -110,7 +110,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             last_msg_content = messages[-1]["content"]
             contains_image = isinstance(last_msg_content, list)
             
-            model = "meta-llama/llama-4-scout-17b-16e-instruct" if contains_image else "llama-3.3-70b-versatile"
+            model = "llama-3.2-90b-vision-preview" if contains_image else "llama-3.3-70b-versatile"
             
             api_messages = []
             for m in messages:
