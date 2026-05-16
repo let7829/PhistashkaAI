@@ -35,7 +35,6 @@ components.html(
 
 st.markdown("""
     <style>
-    #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
     .lightbox {
@@ -79,11 +78,17 @@ else:
     device_key = None
 
 if not device_key:
-    entered_key = st.text_input("Enter Private Sync Key:", type="password")
+    entered_key = st.text_input("Enter Existing Private Key:", type="password")
     if entered_key:
         st.query_params["key"] = entered_key
         st.rerun()
-    st.info("🔒 Enter a private key once. The app will automatically save it into your URL link so it auto-syncs every time you open it!")
+    
+    if st.button("🚀 New User? Generate Key & Start Chatting"):
+        new_random_key = str(random.randint(100000, 999999))
+        st.query_params["key"] = new_random_key
+        st.rerun()
+        
+    st.info("🔒 Enter your key to load your history, or click the button above to generate a brand new private chat link!")
     st.stop()
 
 file_name = f"chats_{device_key}.json"
@@ -114,8 +119,8 @@ if "editing_chat_name" not in st.session_state:
 
 with st.sidebar:
     st.header("🔑 Session Info")
-    st.success("Auto-Sync Active")
-    if st.button("🔓 Clear Key / Logout"):
+    st.success(f"Key: {device_key}")
+    if st.button("🔓 Logout / Clear Session"):
         st.query_params.clear()
         st.rerun()
         
