@@ -226,12 +226,13 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             
             api_messages = [{"role": "system", "content": system_prompt}]
             
-            for m in messages[-10:]:
-                m_content = m["content"]
-                if model == "llama-3.1-8b-instant" and isinstance(m_content, list):
-                    text_part = next((item["text"] for item in m_content if item["type"] == "text"), "")
-                    m_content = f"[User previously attached an image] {text_part}"
-                api_messages.append({"role": m["role"], "content": m_content})
+            # FIXED: Removed history loop entirely. Only appends the single last message.
+            last_m = messages[-1]
+            m_content = last_m["content"]
+            if model == "llama-3.1-8b-instant" and isinstance(m_content, list):
+                text_part = next((item["text"] for item in m_content if item["type"] == "text"), "")
+                m_content = f"[User previously attached an image] {text_part}"
+            api_messages.append({"role": last_m["role"], "content": m_content})
             
             completion = client.chat.completions.create(model=model, messages=api_messages)
             response_text = completion.choices[0].message.content
