@@ -73,12 +73,17 @@ st.markdown("""
 
 st.title("Phistashka AI")
 
-with st.sidebar:
-    st.header("🔑 Device Lock")
-    device_key = st.text_input("Enter Private Key:", type="password", key="device_key_input")
+if "key" in st.query_params:
+    device_key = st.query_params["key"]
+else:
+    device_key = None
 
 if not device_key:
-    st.info("👋 Welcome back! To load your private chats securely without any leaks, please enter a private key or password in the sidebar menu.")
+    entered_key = st.text_input("Enter Private Sync Key:", type="password")
+    if entered_key:
+        st.query_params["key"] = entered_key
+        st.rerun()
+    st.info("🔒 Enter a private key once. The app will automatically save it into your URL link so it auto-syncs every time you open it!")
     st.stop()
 
 file_name = f"chats_{device_key}.json"
@@ -108,6 +113,13 @@ if "editing_chat_name" not in st.session_state:
     st.session_state.editing_chat_name = None
 
 with st.sidebar:
+    st.header("🔑 Session Info")
+    st.success("Auto-Sync Active")
+    if st.button("🔓 Clear Key / Logout"):
+        st.query_params.clear()
+        st.rerun()
+        
+    st.divider()
     st.header("🎨 AI Personality")
     ai_tone = st.selectbox("Choose Tone:", ["Normal", "Humor & Sarcasm", "Storyteller"])
     
