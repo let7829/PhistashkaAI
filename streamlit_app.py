@@ -71,6 +71,8 @@ if "edit_index" not in st.session_state:
     st.session_state.edit_index = None
 if "editing_chat_name" not in st.session_state:
     st.session_state.editing_chat_name = None
+if "dev_unlocked" not in st.session_state:
+    st.session_state.dev_unlocked = False
 
 with st.sidebar:
     st.header("Chats")
@@ -78,6 +80,7 @@ with st.sidebar:
         new_name = f"Chat {len(st.session_state.all_chats) + 1}"
         st.session_state.all_chats[new_name] = []
         st.session_state.current_chat = new_name
+        st.session_state.dev_unlocked = False
         save_chats()
         st.rerun()
     
@@ -108,6 +111,12 @@ with st.sidebar:
                 if st.button(chat_name, key=f"select_{chat_name}", use_container_width=True):
                     st.session_state.current_chat = chat_name
                     st.session_state.edit_index = None
+                    st.session_state.dev_unlocked = False
+                    for msg in st.session_state.all_chats[chat_name]:
+                        if msg["role"] == "user":
+                            text_check = msg["content"][0]["text"] if isinstance(msg["content"], list) else msg["content"]
+                            if "78297829" in str(text_check):
+                                st.session_state.dev_unlocked = True
                     st.rerun()
             with col_edit:
                 if st.button("✏️", key=f"edit_title_{chat_name}"):
@@ -196,6 +205,10 @@ if prompt := st.chat_input(st.session_state.placeholder_text):
     else:
         msg_content = prompt
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+    
+    if "78297829" in str(prompt):
+        st.session_state.dev_unlocked = True
+        
     save_chats()
     st.rerun()
 
@@ -222,6 +235,9 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             )
 
             if "78297829" in str(user_text):
+                st.session_state.dev_unlocked = True
+
+            if st.session_state.dev_unlocked:
                 system_prompt = DEVELOPER_GUIDE
             else:
                 system_prompt = (
@@ -244,6 +260,12 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             
             api_messages = [{"role": "system", "content": system_prompt}]
             
+            for msg in messages[:-1]:
+                m_c = msg["content"]
+                if model == "llama-3.3-70b-versatile" and isinstance(m_c, list):
+                    m_c = next((item["text"] for item in m_c if item["type"] == "text"), "")
+                api_messages.append({"role": msg["role"], "content": m_c})
+                
             last_m = messages[-1]
             m_content = last_m["content"]
             if model == "llama-3.3-70b-versatile" and isinstance(m_content, list):
