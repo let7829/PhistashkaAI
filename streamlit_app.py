@@ -204,7 +204,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
         try:
             last_msg_content = messages[-1]["content"]
             current_is_image = isinstance(last_msg_content, list)
-            model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.3-70b-versatile"
+            model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.1-8b-instant"
             
             current_date = datetime.now().strftime("%B %d, %Y")
             
@@ -226,9 +226,9 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             
             api_messages = [{"role": "system", "content": system_prompt}]
             
-            for m in messages:
+            for m in messages[-10:]:
                 m_content = m["content"]
-                if model == "llama-3.3-70b-versatile" and isinstance(m_content, list):
+                if model == "llama-3.1-8b-instant" and isinstance(m_content, list):
                     text_part = next((item["text"] for item in m_content if item["type"] == "text"), "")
                     m_content = f"[User previously attached an image] {text_part}"
                 api_messages.append({"role": m["role"], "content": m_content})
@@ -241,4 +241,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                 save_chats()
                 st.rerun()
         except Exception as e:
-            st.error(f"Error: {e}")
+            if "429" in str(e):
+                st.error("⏳ Phistashka AI is resting! The daily rate limit was reached. Please try again in a few minutes.")
+            else:
+                st.error(f"Error: {e}")
