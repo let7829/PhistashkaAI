@@ -1,27 +1,42 @@
 import streamlit as st
+import streamlit.components.v1 as components
 from groq import Groq
 import base64
 import random
 from datetime import datetime
 import json
-import os
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
-def load_chats():
-    if os.path.exists("chats.json"):
-        try:
-            with open("chats.json", "r", encoding="utf-8") as f:
-                return json.load(f)
-        except:
-            return {"Chat 1": []}
-    return {"Chat 1": []}
+if "all_chats" not in st.session_state:
+    st.session_state.all_chats = {"Chat 1": []}
 
 def save_chats():
-    with open("chats.json", "w", encoding="utf-8") as f:
-        json.dump(st.session_state.all_chats, f, ensure_ascii=False, indent=4)
+    pass
 
 st.set_page_config(page_title="Phistashka AI")
+
+components.html(
+    """
+    <script>
+    const metaApp = document.createElement('meta');
+    metaApp.name = 'apple-mobile-web-app-capable';
+    metaApp.content = 'yes';
+    document.head.appendChild(metaApp);
+
+    const metaStatus = document.createElement('meta');
+    metaStatus.name = 'apple-mobile-web-app-status-bar-style';
+    metaStatus.content = 'black-translucent';
+    document.head.appendChild(metaStatus);
+    
+    const metaMobile = document.createElement('meta');
+    metaMobile.name = 'mobile-web-app-capable';
+    metaMobile.content = 'yes';
+    document.head.appendChild(metaMobile);
+    </script>
+    """,
+    height=0,
+)
 
 st.markdown("""
     <style>
@@ -63,8 +78,6 @@ st.markdown("""
 
 st.title("Phistashka AI")
 
-if "all_chats" not in st.session_state:
-    st.session_state.all_chats = load_chats()
 if "current_chat" not in st.session_state:
     st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
 if "edit_index" not in st.session_state:
@@ -82,7 +95,6 @@ with st.sidebar:
         new_name = f"Chat {len(st.session_state.all_chats) + 1}"
         st.session_state.all_chats[new_name] = []
         st.session_state.current_chat = new_name
-        save_chats()
         st.rerun()
     
     st.divider()
@@ -103,7 +115,6 @@ with st.sidebar:
                         st.session_state.all_chats = new_chats
                         if st.session_state.current_chat == chat_name or st.session_state.current_chat not in st.session_state.all_chats:
                             st.session_state.current_chat = new_name
-                        save_chats()
                     st.session_state.editing_chat_name = None
                     st.rerun()
         else:
@@ -124,7 +135,6 @@ with st.sidebar:
                         st.session_state.all_chats = {"Chat 1": []}
                     if st.session_state.current_chat == chat_name or st.session_state.current_chat not in st.session_state.all_chats:
                         st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
-                    save_chats()
                     st.rerun()
 
 messages = st.session_state.all_chats[st.session_state.current_chat]
@@ -139,7 +149,6 @@ for i, message in enumerate(messages):
                 st.rerun()
             if st.button("↩️", key=f"undo_{i}"):
                 st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
-                save_chats()
                 st.rerun()
         with col_txt:
             with st.chat_message("user"):
@@ -154,7 +163,6 @@ for i, message in enumerate(messages):
                         else:
                             messages[i]["content"] = edit_val
                         st.session_state.all_chats[st.session_state.current_chat] = messages[:i+1]
-                        save_chats()
                         st.session_state.edit_index = None
                         st.rerun()
                 else:
@@ -200,7 +208,6 @@ if prompt := st.chat_input(st.session_state.placeholder_text):
     else:
         msg_content = prompt
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
-    save_chats()
     st.rerun()
 
 if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
@@ -272,7 +279,6 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             if response_text:
                 st.markdown(response_text)
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": response_text})
-                save_chats()
                 st.rerun()
         except Exception as e:
             if "429" in str(e):
