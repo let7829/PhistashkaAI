@@ -72,27 +72,108 @@ st.markdown("""
 
 st.title("Phistashka AI")
 
-if "webview_key" not in st.session_state:
-    st.session_state.webview_key = None
+if "vault_checked" not in st.session_state:
+    st.session_state.vault_checked = False
+
+if "native_key" not in st.session_state:
+    st.session_state.native_key = None
+
+if "logout_triggered" in st.session_state and st.session_state.logout_triggered:
+    components.html(
+        """
+        <script>
+        try {
+            let vault = window.AndroidVault || window.parent.AndroidVault || window.top.AndroidVault;
+            if (vault) {
+                vault.clearKey();
+            }
+        } catch(e) {}
+        </script>
+        """,
+        height=0,
+    )
+    st.query_params.clear()
+    st.session_state.native_key = None
+    del st.session_state.logout_triggered
+    st.rerun()
+
+if not st.session_state.vault_checked and "key" not in st.query_params:
+    st.session_state.vault_checked = True
+    components.html(
+        """
+        <script>
+        try {
+            let vault = window.AndroidVault || window.parent.AndroidVault || window.top.AndroidVault;
+            if (vault) {
+                const savedKey = vault.getKey();
+                if (savedKey && savedKey.length > 0) {
+                    window.parent.postMessage({type: "FROM_VAULT", key: savedKey}, "*");
+                }
+            }
+        } catch(e) {}
+        </script>
+        """,
+        height=0,
+    )
+
+if "key_from_js" in st.query_params:
+    received_key = st.query_params["key_from_js"]
+    st.query_params["key"] = received_key
+    st.session_state.native_key = received_key
+    del st.query_params["key_from_js"]
+    st.rerun()
+
+st.html(
+    """
+    <script>
+    window.addEventListener("message", (event) => {
+        if (event.data && event.data.type === "FROM_VAULT") {
+            const endpoint = new URL(window.location.href);
+            endpoint.searchParams.set("key_from_js", event.data.key);
+            window.parent.location.replace(endpoint.href);
+        }
+    });
+    </script>
+    """
+)
 
 if "key" in st.query_params:
-    st.session_state.webview_key = st.query_params["key"]
-
-device_key = st.session_state.webview_key
+    device_key = st.query_params["key"]
+    st.session_state.native_key = device_key
+elif st.session_state.native_key:
+    device_key = st.session_state.native_key
+else:
+    device_key = None
 
 if not device_key:
     entered_key = st.text_input("Enter Existing Private Key:", type="password")
     if entered_key:
-        st.session_state.webview_key = entered_key
+        st.query_params["key"] = entered_key
+        st.session_state.native_key = entered_key
         st.rerun()
     
     if st.button("🚀 New User? Generate Key & Start Chatting"):
         new_random_key = str(random.randint(100000, 999999))
-        st.session_state.webview_key = new_random_key
+        st.query_params["key"] = new_random_key
+        st.session_state.native_key = new_random_key
         st.rerun()
         
     st.info("🔒 Enter your key to load your history, or click the button above to generate a brand new private chat link!")
     st.stop()
+else:
+    components.html(
+        f"""
+        <script>
+        try {{
+            let vault = window.AndroidVault || window.parent.AndroidVault || window.top.AndroidVault;
+            if (vault) {{
+                vault.saveKey("{device_key}");
+            }}
+        }} catch(e) {{}}
+        </script>
+        """,
+        height=0,
+    )
 
 file_name = f"chats_{device_key}.json"
 
@@ -180,8 +261,7 @@ with st.sidebar:
     st.header("🔑 Session Info")
     st.success(f"Key: {device_key}")
     if st.button("🔓 Logout / Clear Session"):
-        st.session_state.webview_key = None
-        st.query_params.clear()
+        st.session_state.logout_triggered = True
         st.rerun()
 
 messages = st.session_state.all_chats[st.session_state.current_chat]
