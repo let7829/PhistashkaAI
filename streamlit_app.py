@@ -8,6 +8,9 @@ import json
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
+if "all_chats" not in st.session_state:
+    st.session_state.all_chats = {"Chat 1": []}
+
 st.set_page_config(page_title="Phistashka AI")
 
 components.html(
@@ -72,85 +75,8 @@ st.markdown("""
 
 st.title("Phistashka AI")
 
-if "storage_loaded" not in st.session_state:
-    st.session_state.storage_loaded = False
-
-if not st.session_state.storage_loaded:
-    components.html(
-        """
-        <script>
-        const chats = localStorage.getItem("phistashka_chats");
-        const current = localStorage.getItem("phistashka_current_chat");
-        window.parent.postMessage({
-            type: "LOAD_STORAGE",
-            chats: chats ? JSON.parse(chats) : {"Chat 1": []},
-            current_chat: current || "Chat 1"
-        }, "*");
-        </script>
-        """,
-        height=0,
-    )
-
-def save_chats():
-    if "all_chats" in st.session_state and "current_chat" in st.session_state:
-        chats_json = json.dumps(st.session_state.all_chats, ensure_ascii=False)
-        current_chat = st.session_state.current_chat
-        components.html(
-            f"""
-            <script>
-            localStorage.setItem("phistashka_chats", JSON.stringify({chats_json}));
-            localStorage.setItem("phistashka_current_chat", "{current_chat}");
-            </script>
-            """,
-            height=0,
-        )
-
-import hmac
-from queue import Queue
-if "msg_queue" not in st.session_state:
-    st.session_state.msg_queue = Queue()
-
-class MessageHandler:
-    def __init__(self):
-        pass
-    def handle_message(self, message):
-        if message.get("type") == "LOAD_STORAGE":
-            st.session_state.all_chats = message.get("chats")
-            st.session_state.current_chat = message.get("current_chat")
-            st.session_state.storage_loaded = True
-            st.rerun()
-
-    def listen(self):
-        ctx = st.query_params
-        if "msg_data" in ctx:
-            try:
-                data = json.loads(ctx["msg_data"])
-                self.handle_message(data)
-                st.query_params.clear()
-            except:
-                pass
-
-components.html(
-    """
-    <script>
-    window.addEventListener("message", (event) => {
-        if (event.data && event.data.type === "LOAD_STORAGE") {
-            const url = new URL(window.parent.location.href);
-            url.searchParams.set("msg_data", JSON.stringify(event.data));
-            window.parent.location.href = url.href;
-        }
-    });
-    </script>
-    """,
-    height=0,
-)
-
-if not st.session_state.storage_loaded:
-    handler = MessageHandler()
-    handler.listen()
-    st.info("Loading your private on-device chats...")
-    st.stop()
-
+if "current_chat" not in st.session_state:
+    st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
 if "edit_index" not in st.session_state:
     st.session_state.edit_index = None
 if "editing_chat_name" not in st.session_state:
@@ -166,7 +92,6 @@ with st.sidebar:
         new_name = f"Chat {len(st.session_state.all_chats) + 1}"
         st.session_state.all_chats[new_name] = []
         st.session_state.current_chat = new_name
-        save_chats()
         st.rerun()
     
     st.divider()
@@ -187,7 +112,6 @@ with st.sidebar:
                         st.session_state.all_chats = new_chats
                         if st.session_state.current_chat == chat_name or st.session_state.current_chat not in st.session_state.all_chats:
                             st.session_state.current_chat = new_name
-                        save_chats()
                     st.session_state.editing_chat_name = None
                     st.rerun()
         else:
@@ -196,7 +120,6 @@ with st.sidebar:
                 if st.button(chat_name, key=f"select_{chat_name}", use_container_width=True):
                     st.session_state.current_chat = chat_name
                     st.session_state.edit_index = None
-                    save_chats()
                     st.rerun()
             with col_edit:
                 if st.button("✏️", key=f"edit_title_{chat_name}"):
@@ -209,8 +132,27 @@ with st.sidebar:
                         st.session_state.all_chats = {"Chat 1": []}
                     if st.session_state.current_chat == chat_name or st.session_state.current_chat not in st.session_state.all_chats:
                         st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
-                    save_chats()
                     st.rerun()
+
+    st.divider()
+    st.header("💾 Device Backup")
+    with st.expander("Backup Controls"):
+        chats_str = json.dumps(st.session_state.all_chats, ensure_ascii=False)
+        b64_backup = base64.b64encode(chats_str.encode("utf-8")).decode("utf-8")
+        st.text_area("Copy this backup code:", value=b64_backup, height=120)
+        
+        import_code = st.text_input("Paste backup code here:")
+        if st.button("📥 Load Data"):
+            if import_code:
+                try:
+                    decoded_str = base64.b64decode(import_code.encode("utf-8")).decode("utf-8")
+                    loaded_chats = json.loads(decoded_str)
+                    if isinstance(loaded_chats, dict):
+                        st.session_state.all_chats = loaded_chats
+                        st.session_state.current_chat = list(loaded_chats.keys())[0]
+                        st.rerun()
+                except:
+                    st.error("Invalid backup code string!")
 
 messages = st.session_state.all_chats[st.session_state.current_chat]
 
@@ -224,7 +166,6 @@ for i, message in enumerate(messages):
                 st.rerun()
             if st.button("↩️", key=f"undo_{i}"):
                 st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
-                save_chats()
                 st.rerun()
         with col_txt:
             with st.chat_message("user"):
@@ -239,7 +180,6 @@ for i, message in enumerate(messages):
                         else:
                             messages[i]["content"] = edit_val
                         st.session_state.all_chats[st.session_state.current_chat] = messages[:i+1]
-                        save_chats()
                         st.session_state.edit_index = None
                         st.rerun()
                 else:
@@ -285,7 +225,6 @@ if prompt := st.chat_input(st.session_state.placeholder_text):
     else:
         msg_content = prompt
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
-    save_chats()
     st.rerun()
 
 if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
@@ -357,7 +296,6 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             if response_text:
                 st.markdown(response_text)
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": response_text})
-                save_chats()
                 st.rerun()
         except Exception as e:
             if "429" in str(e):
