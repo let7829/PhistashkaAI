@@ -118,17 +118,6 @@ if "editing_chat_name" not in st.session_state:
     st.session_state.editing_chat_name = None
 
 with st.sidebar:
-    st.header("🔑 Session Info")
-    st.success(f"Key: {device_key}")
-    if st.button("🔓 Logout / Clear Session"):
-        st.query_params.clear()
-        st.rerun()
-        
-    st.divider()
-    st.header("🎨 AI Personality")
-    ai_tone = st.selectbox("Choose Tone:", ["Normal", "Humor & Sarcasm", "Storyteller"])
-    
-    st.divider()
     st.header("Chats")
     if st.button("➕ New Chat"):
         new_name = f"Chat {len(st.session_state.all_chats) + 1}"
@@ -179,6 +168,17 @@ with st.sidebar:
                         st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
                     save_chats()
                     st.rerun()
+
+    st.divider()
+    st.header("🎨 AI Personality")
+    ai_tone = st.selectbox("Choose Tone:", ["Normal", "Humor & Sarcasm", "Storyteller"])
+    
+    st.divider()
+    st.header("🔑 Session Info")
+    st.success(f"Key: {device_key}")
+    if st.button("🔓 Logout / Clear Session"):
+        st.query_params.clear()
+        st.rerun()
 
 messages = st.session_state.all_chats[st.session_state.current_chat]
 
