@@ -5,11 +5,9 @@ import base64
 import random
 from datetime import datetime
 import json
+import os
 
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-
-if "all_chats" not in st.session_state:
-    st.session_state.all_chats = {"Chat 1": []}
 
 st.set_page_config(page_title="Phistashka AI")
 
@@ -75,7 +73,34 @@ st.markdown("""
 
 st.title("Phistashka AI")
 
-if "current_chat" not in st.session_state:
+with st.sidebar:
+    st.header("🔑 Device Lock")
+    device_key = st.text_input("Enter Private Key:", type="password", key="device_key_input")
+
+if not device_key:
+    st.info("👋 Welcome back! To load your private chats securely without any leaks, please enter a private key or password in the sidebar menu.")
+    st.stop()
+
+file_name = f"chats_{device_key}.json"
+
+if "current_device_key" not in st.session_state or st.session_state.current_device_key != device_key:
+    st.session_state.current_device_key = device_key
+    if os.path.exists(file_name):
+        try:
+            with open(file_name, "r", encoding="utf-8") as f:
+                st.session_state.all_chats = json.load(f)
+        except:
+            st.session_state.all_chats = {"Chat 1": []}
+    else:
+        st.session_state.all_chats = {"Chat 1": []}
+    st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
+
+def save_chats():
+    if "all_chats" in st.session_state and device_key:
+        with open(file_name, "w", encoding="utf-8") as f:
+            json.dump(st.session_state.all_chats, f, ensure_ascii=False)
+
+if "current_chat" not in st.session_state or st.session_state.current_chat not in st.session_state.all_chats:
     st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
 if "edit_index" not in st.session_state:
     st.session_state.edit_index = None
@@ -92,6 +117,7 @@ with st.sidebar:
         new_name = f"Chat {len(st.session_state.all_chats) + 1}"
         st.session_state.all_chats[new_name] = []
         st.session_state.current_chat = new_name
+        save_chats()
         st.rerun()
     
     st.divider()
@@ -112,6 +138,7 @@ with st.sidebar:
                         st.session_state.all_chats = new_chats
                         if st.session_state.current_chat == chat_name or st.session_state.current_chat not in st.session_state.all_chats:
                             st.session_state.current_chat = new_name
+                        save_chats()
                     st.session_state.editing_chat_name = None
                     st.rerun()
         else:
@@ -120,6 +147,7 @@ with st.sidebar:
                 if st.button(chat_name, key=f"select_{chat_name}", use_container_width=True):
                     st.session_state.current_chat = chat_name
                     st.session_state.edit_index = None
+                    save_chats()
                     st.rerun()
             with col_edit:
                 if st.button("✏️", key=f"edit_title_{chat_name}"):
@@ -132,27 +160,8 @@ with st.sidebar:
                         st.session_state.all_chats = {"Chat 1": []}
                     if st.session_state.current_chat == chat_name or st.session_state.current_chat not in st.session_state.all_chats:
                         st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
+                    save_chats()
                     st.rerun()
-
-    st.divider()
-    st.header("💾 Device Backup")
-    with st.expander("Backup Controls"):
-        chats_str = json.dumps(st.session_state.all_chats, ensure_ascii=False)
-        b64_backup = base64.b64encode(chats_str.encode("utf-8")).decode("utf-8")
-        st.text_area("Copy this backup code:", value=b64_backup, height=120)
-        
-        import_code = st.text_input("Paste backup code here:")
-        if st.button("📥 Load Data"):
-            if import_code:
-                try:
-                    decoded_str = base64.b64decode(import_code.encode("utf-8")).decode("utf-8")
-                    loaded_chats = json.loads(decoded_str)
-                    if isinstance(loaded_chats, dict):
-                        st.session_state.all_chats = loaded_chats
-                        st.session_state.current_chat = list(loaded_chats.keys())[0]
-                        st.rerun()
-                except:
-                    st.error("Invalid backup code string!")
 
 messages = st.session_state.all_chats[st.session_state.current_chat]
 
@@ -166,6 +175,7 @@ for i, message in enumerate(messages):
                 st.rerun()
             if st.button("↩️", key=f"undo_{i}"):
                 st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
+                save_chats()
                 st.rerun()
         with col_txt:
             with st.chat_message("user"):
@@ -180,6 +190,7 @@ for i, message in enumerate(messages):
                         else:
                             messages[i]["content"] = edit_val
                         st.session_state.all_chats[st.session_state.current_chat] = messages[:i+1]
+                        save_chats()
                         st.session_state.edit_index = None
                         st.rerun()
                 else:
@@ -225,6 +236,7 @@ if prompt := st.chat_input(st.session_state.placeholder_text):
     else:
         msg_content = prompt
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+    save_chats()
     st.rerun()
 
 if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
@@ -296,6 +308,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             if response_text:
                 st.markdown(response_text)
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": response_text})
+                save_chats()
                 st.rerun()
         except Exception as e:
             if "429" in str(e):
