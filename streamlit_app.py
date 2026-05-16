@@ -204,7 +204,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
         try:
             last_msg_content = messages[-1]["content"]
             current_is_image = isinstance(last_msg_content, list)
-            model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.1-8b-instant"
+            model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.3-70b-versatile"
             
             current_date = datetime.now().strftime("%B %d, %Y")
             
@@ -246,7 +246,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             
             last_m = messages[-1]
             m_content = last_m["content"]
-            if model == "llama-3.1-8b-instant" and isinstance(m_content, list):
+            if model == "llama-3.3-70b-versatile" and isinstance(m_content, list):
                 text_part = next((item["text"] for item in m_content if item["type"] == "text"), "")
                 m_content = f"[User previously attached an image] {text_part}"
             api_messages.append({"role": last_m["role"], "content": m_content})
