@@ -72,12 +72,63 @@ st.markdown("""
 
 st.title("Phistashka AI")
 
+if "logout_triggered" in st.session_state and st.session_state.logout_triggered:
+    components.html(
+        """
+        <script>
+        try {
+            localStorage.removeItem("phistashka_sync_key");
+            let targetUrl = "";
+            try {
+                targetUrl = window.top.location.href;
+            } catch(e) {
+                targetUrl = document.referrer;
+            }
+            if (targetUrl) {
+                const url = new URL(targetUrl);
+                url.searchParams.delete("key");
+                window.top.location.href = url.href;
+            }
+        } catch(e) {}
+        </script>
+        """,
+        height=0,
+    )
+    del st.session_state.logout_triggered
+    st.stop()
+
 if "key" in st.query_params:
     device_key = st.query_params["key"]
 else:
     device_key = None
 
 if not device_key:
+    components.html(
+        """
+        <script>
+        try {
+            const savedKey = localStorage.getItem("phistashka_sync_key");
+            if (savedKey) {
+                let targetUrl = "";
+                try {
+                    targetUrl = window.top.location.href;
+                } catch(e) {
+                    targetUrl = document.referrer;
+                }
+                if (targetUrl) {
+                    const url = new URL(targetUrl);
+                    if (!url.searchParams.has("key")) {
+                        url.searchParams.set("key", savedKey);
+                        window.top.location.href = url.href;
+                    }
+                }
+            }
+        } catch(e) {}
+        </script>
+        """,
+        height=0,
+    )
+    
     entered_key = st.text_input("Enter Existing Private Key:", type="password")
     if entered_key:
         st.query_params["key"] = entered_key
@@ -90,6 +141,17 @@ if not device_key:
         
     st.info("🔒 Enter your key to load your history, or click the button above to generate a brand new private chat link!")
     st.stop()
+else:
+    components.html(
+        f"""
+        <script>
+        try {{
+            localStorage.setItem("phistashka_sync_key", "{device_key}");
+        }} catch(e) {{}}
+        </script>
+        """,
+        height=0,
+    )
 
 file_name = f"chats_{device_key}.json"
 
@@ -177,6 +239,7 @@ with st.sidebar:
     st.header("🔑 Session Info")
     st.success(f"Key: {device_key}")
     if st.button("🔓 Logout / Clear Session"):
+        st.session_state.logout_triggered = True
         st.query_params.clear()
         st.rerun()
 
