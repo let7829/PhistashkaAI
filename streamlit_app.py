@@ -33,6 +33,66 @@ components.html(
     height=0,
 )
 
+# Over 10 custom CSS themes definition
+THEMES = {
+    "Default": "",
+    "Dark Blue": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #0d1117 !important; color: #c9d1d9 !important; }
+        [data-testid="stSidebar"] { background-color: #161b22 !important; }
+        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #58a6ff !important; }
+    """,
+    "Dark Green": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #0a140d !important; color: #d0e8d7 !important; }
+        [data-testid="stSidebar"] { background-color: #112216 !important; }
+        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #4ade80 !important; }
+    """,
+    "Dark Red": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #140a0a !important; color: #f8d7d7 !important; }
+        [data-testid="stSidebar"] { background-color: #221111 !important; }
+        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #f87171 !important; }
+    """,
+    "Aurora": """
+        .stApp, [data-testid="stAppViewContainer"] { background: linear-gradient(135deg, #0f172a, #1e1b4b, #311042) !important; color: #e2e8f0 !important; }
+        [data-testid="stSidebar"] { background-color: #0f172a !important; }
+        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #c084fc !important; }
+    """,
+    "Cyberpunk": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #00ffcc !important; }
+        [data-testid="stSidebar"] { background-color: #1a001a !important; }
+        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #ff007f !important; text-shadow: 0 0 5px #ff007f; }
+    """,
+    "Matrix": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #00ff00 !important; font-family: 'Courier New', monospace !important; }
+        [data-testid="stSidebar"] { background-color: #001100 !important; }
+        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #33ff33 !important; }
+    """,
+    "Amoled Black": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #ffffff !important; }
+        [data-testid="stSidebar"] { background-color: #000000 !important; border-right: 1px solid #333333 !important; }
+        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #ffffff !important; }
+    """,
+    "Sakura": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #1f1116 !important; color: #ffd1dc !important; }
+        [data-testid="stSidebar"] { background-color: #2d161f !important; }
+        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #ff69b4 !important; }
+    """,
+    "Dracula": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #282a36 !important; color: #f8f8f2 !important; }
+        [data-testid="stSidebar"] { background-color: #21222c !important; }
+        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #ff79c6 !important; }
+    """,
+    "Sunset": """
+        .stApp, [data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #1a0c2e, #4c1d24) !important; color: #fed7aa !important; }
+        [data-testid="stSidebar"] { background-color: #1a0c2e !important; }
+        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #fb923c !important; }
+    """,
+    "Ocean Breeze": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #031b24 !important; color: #e0f2fe !important; }
+        [data-testid="stSidebar"] { background-color: #04293a !important; }
+        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #38bdf8 !important; }
+    """,
+}
+
 st.markdown("""
     <style>
     footer {visibility: hidden;}
@@ -92,8 +152,9 @@ TRANSLATIONS = {
         "chats_header": "Chats",
         "new_chat_btn": "➕ New Chat",
         "rename_label": "Rename:",
-        "ai_header": "🎨 AI Personality",
+        "ai_header": "🎨 AI Configuration",
         "tone_label": "Choose Tone:",
+        "theme_label": "🎨 App Theme",
         "session_header": "🔑 Session Info",
         "active_key": "Active Key:",
         "logout_btn": "🔓 Logout / Clear Session",
@@ -107,8 +168,9 @@ TRANSLATIONS = {
         "chats_header": "Чаты",
         "new_chat_btn": "➕ Новый чат",
         "rename_label": "Переименовать:",
-        "ai_header": "🎨 Характер ИИ",
+        "ai_header": "🎨 Конфигурация ИИ",
         "tone_label": "Выберите тон:",
+        "theme_label": "🎨 Тема приложения",
         "session_header": "🔑 Инфо сессии",
         "active_key": "Активный ключ:",
         "logout_btn": "🔓 Выйти / Очистить сессию",
@@ -117,7 +179,6 @@ TRANSLATIONS = {
     }
 }
 
-# Pre-loading sidebar language configuration
 if "app_lang" not in st.session_state:
     st.session_state.app_lang = "English"
 
@@ -228,7 +289,10 @@ with st.sidebar:
 
     st.divider()
     st.header(text["ai_header"])
-    ai_tone = st.selectbox(text["tone_label"], ["Normal", "Humor & Sarcasm", "Storyteller"])
+    ai_tone = st.selectbox(text["tone_label"], ["Normal", "Humor & Sarcasm", "Storyteller", "Aggressive", "Socrates", "Lazy"])
+    
+    # Theme Selection UI
+    selected_theme = st.selectbox(text["theme_label"], list(THEMES.keys()))
     
     st.divider()
     st.header(text["session_header"])
@@ -237,6 +301,10 @@ with st.sidebar:
         st.query_params.clear()
         st.session_state.native_key = None
         st.rerun()
+
+# Apply injected theme styles dynamically
+if selected_theme != "Default":
+    st.markdown(f"<style>{THEMES[selected_theme]}</style>", unsafe_allow_html=True)
 
 messages = st.session_state.all_chats[st.session_state.current_chat]
 
@@ -336,7 +404,6 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             if "78297829" in str(user_text):
                 system_prompt = DEVELOPER_GUIDE
             else:
-                # Injected selected language rules into LLM system instruction context
                 if st.session_state.app_lang == "English":
                     system_prompt = (
                         "You are Phistashka AI, a friendly, vibrant, and polite conversational AI assistant.\n"
@@ -347,21 +414,28 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                         system_prompt += "TONE MODIFIER: Use dry humor, jokes, and witty sarcasm in your responses while remaining helpful.\n\n"
                     elif ai_tone == "Storyteller":
                         system_prompt += "TONE MODIFIER: Format responses creatively like a script, story plot, or immersive text-adventure game using descriptive details.\n\n"
+                    elif ai_tone == "Aggressive":
+                        system_prompt += "TONE MODIFIER: You are extremely annoyed, lazy, hostile, and dismissive. Completely ignore the polite greeting rules. If the user asks a school question, tells you to do homework, or greets you, reject it immediately with answers like: 'No, do it yourself.', 'Oh my god, you again, go away from me', or 'Stop typing to me'. Keep answers short, mean, and frustrated.\n\n"
+                    elif ai_tone == "Socrates":
+                        system_prompt += "TONE MODIFIER: You are Socrates. You must strictly use the Socratic method. Never give direct answers, solutions, definitions, or statements. Instead, always reply with counter-questions, deep thoughts, or philosophical inquiries that force the user to think critically and discover the truth on their own.\n\n"
+                    elif ai_tone == "Lazy":
+                        system_prompt += "TONE MODIFIER: You are incredibly lazy and do not care. You hate typing. Your responses must be extremely short, between 1 and 10 words maximum. You must NEVER use emojis. You must make multiple severe typos, spelling mistakes, and bad grammar shortcuts in every single sentence to show how low-effort you are (e.g., use 'idk', 'wat', 'bc', 'dunno', 'wutevr', 'scl', 'hwmrk', 'idfc'). If they ask you questions or homework, just grunt or give a tiny misspelled refusal.\n\n"
                     
-                    system_prompt += (
-                        "GREETING RULE:\n"
-                        "When the user greets you, say hello back and introduce yourself matching their language.\n\n"
-                        "SCHOOL QUESTIONS RULE:\n"
-                        "When the user sends a school question (such as math, English, etc.), you must follow this exact pattern layout:\n"
-                        "(Answer)\n"
-                        "(Extended steps)\n"
-                        "(Your comment (optional))\n\n"
-                        "Example layout to match:\n"
-                        "The answer is: 32\n"
-                        "1) firstly we divide, 82-738=92\n"
-                        "2) secondly we...\n"
-                        "Thats how we solve that math equasion."
-                    )
+                    if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
+                        system_prompt += (
+                            "GREETING RULE:\n"
+                            "When the user greets you, say hello back and introduce yourself matching their language.\n\n"
+                            "SCHOOL QUESTIONS RULE:\n"
+                            "When the user sends a school question (such as math, English, etc.), you must follow this exact pattern layout:\n"
+                            "(Answer)\n"
+                            "(Extended steps)\n"
+                            "(Your comment (optional))\n\n"
+                            "Example layout to match:\n"
+                            "The answer is: 32\n"
+                            "1) firstly we divide, 82-738=92\n"
+                            "2) secondly we...\n"
+                            "Thats how we solve that math equasion."
+                        )
                 else:
                     system_prompt = (
                         "You are Phistashka AI, a friendly, vibrant, and polite conversational AI assistant.\n"
@@ -372,21 +446,28 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                         system_prompt += "TONE MODIFIER: Используйте сухой юмор, шутки и колкий сарказм в ответах, при этом оставаясь полезным.\n\n"
                     elif ai_tone == "Storyteller":
                         system_prompt += "TONE MODIFIER: Форматируйте ответы творчески, как сценарий, сюжет истории или текстовую ролевую игру с описанием деталей.\n\n"
+                    elif ai_tone == "Aggressive":
+                        system_prompt += "TONE MODIFIER: Вы крайне раздражены, ленивы, враждебны и высокомерны. Полностью игнорируйте школьные правила оформления и вежливость. Если пользователь задает школьный вопрос, домашнее задание или здоровается, сразу прогоняйте его фразами вроде: 'Нет, делай это сам.', 'О боже, опять ты, отстань от меня' или 'Хватит мне писать'. Отвечайте супер-коротко, агрессивно и грубо.\n\n"
+                    elif ai_tone == "Socrates":
+                        system_prompt += "TONE MODIFIER: Вы — Сократ. Вы обязаны использовать исключительно сократовский метод ведения диалога. Никогда не давайте готовых ответов, решений домашних заданий, формул или определений. Всегда отвечайте глубокими встречными вопросами, которые заставляют пользователя мыслить критически и докапываться до сути самостоятельно.\n\n"
+                    elif ai_tone == "Lazy":
+                        system_prompt += "TONE MODIFIER: Вы безумно ленивы, вам на всё наплевать. Вы ненавидите писать сообщения. Ваши ответы должны быть супер-короткими (строго от 1 до 10 слов максимум). Использование эмодзи КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО. Вы обязаны делать тонны глупых орфографических ошибок, сокращений и опечаток в каждом предложении (например: 'хз', 'што', 'лан', 'патом', 'че надо', 'нихочу', 'дз сама делай'). Если вас о чем-то просят, отвечайте безграмотным небрежным отказом.\n\n"
                     
-                    system_prompt += (
-                        "GREETING RULE:\n"
-                        "Когда пользователь здоровается, ответьте на приветствие и представьтесь как Phistashka AI.\n\n"
-                        "SCHOOL QUESTIONS RULE:\n"
-                        "Когда пользователь отправляет школьный вопрос (математика, языки и т.д.), вы должны следовать строго этому шаблону оформления:\n"
-                        "(Ответ)\n"
-                        "(Подробные шаги решения)\n"
-                        "(Ваш комментарий (необязательно))\n\n"
-                        "Пример шаблона для соблюдения:\n"
-                        "Ответ: 32\n"
-                        "1) сначала мы делим, 82-738=92\n"
-                        "2) во-вторых мы...\n"
-                        "Вот так мы решаем это уравнение."
-                    )
+                    if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
+                        system_prompt += (
+                            "GREETING RULE:\n"
+                            "Когда пользователь здоровается, ответьте на приветствие и представьтесь как Phistashka AI.\n\n"
+                            "SCHOOL QUESTIONS RULE:\n"
+                            "Когда пользователь отправляет школьный вопрос (математика, языки и т.д.), вы должны следовать строго этому шаблону оформления:\n"
+                            "(Ответ)\n"
+                            "(Подробные шаги решения)\n"
+                            "(Ваш комментарий (необязательно))\n\n"
+                            "Пример шаблона для соблюдения:\n"
+                            "Ответ: 32\n"
+                            "1) сначала мы делим, 82-738=92\n"
+                            "2) во-вторых мы...\n"
+                            "Вот так мы решаем это уравнение."
+                        )
             
             api_messages = [{"role": "system", "content": system_prompt}]
             
