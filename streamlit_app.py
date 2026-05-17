@@ -83,20 +83,67 @@ elif st.session_state.native_key:
 else:
     device_key = None
 
+# UI Language Dictionary
+TRANSLATIONS = {
+    "English": {
+        "input_label": "Enter Existing Private Key:",
+        "gen_btn": "🚀 New User? Generate Key & Start Chatting",
+        "info_locked": "🔒 Enter your key to load history. To make this app remember your key across restarts, save it inside your Sketchware setup or copy the generated key below.",
+        "chats_header": "Chats",
+        "new_chat_btn": "➕ New Chat",
+        "rename_label": "Rename:",
+        "ai_header": "🎨 AI Personality",
+        "tone_label": "Choose Tone:",
+        "session_header": "🔑 Session Info",
+        "active_key": "Active Key:",
+        "logout_btn": "🔓 Logout / Clear Session",
+        "phrases": ["Say hello!", "Say hi!", "Welcome!", "Type here!", "Ready to chat!", "Write something cool!"],
+        "lang_label": "🌐 App Language"
+    },
+    "Russian": {
+        "input_label": "Введите существующий приватный ключ:",
+        "gen_btn": "🚀 Новый пользователь? Создать ключ и начать чат",
+        "info_locked": "🔒 Введите свой ключ, чтобы загрузить историю. Чтобы приложение запомнило ваш ключ, сохраните его в настройках Sketchware или скопируйте сгенерированный ключ ниже.",
+        "chats_header": "Чаты",
+        "new_chat_btn": "➕ Новый чат",
+        "rename_label": "Переименовать:",
+        "ai_header": "🎨 Характер ИИ",
+        "tone_label": "Выберите тон:",
+        "session_header": "🔑 Инфо сессии",
+        "active_key": "Активный ключ:",
+        "logout_btn": "🔓 Выйти / Очистить сессию",
+        "phrases": ["Скажи привет!", "Привет!", "Добро пожаловать!", "Пиши тут!", "Готов к общению!", "Напиши что-то крутое!"],
+        "lang_label": "🌐 Язык приложения"
+    }
+}
+
+# Pre-loading sidebar language configuration
+if "app_lang" not in st.session_state:
+    st.session_state.app_lang = "English"
+
+with st.sidebar:
+    st.session_state.app_lang = st.selectbox(
+        TRANSLATIONS[st.session_state.app_lang]["lang_label"], 
+        ["English", "Russian"], 
+        index=0 if st.session_state.app_lang == "English" else 1
+    )
+
+text = TRANSLATIONS[st.session_state.app_lang]
+
 if not device_key:
-    entered_key = st.text_input("Enter Existing Private Key:", type="password")
+    entered_key = st.text_input(text["input_label"], type="password")
     if entered_key:
         st.query_params["key"] = entered_key
         st.session_state.native_key = entered_key
         st.rerun()
     
-    if st.button("🚀 New User? Generate Key & Start Chatting"):
+    if st.button(text["gen_btn"]):
         new_random_key = str(random.randint(100000, 999999))
         st.query_params["key"] = new_random_key
         st.session_state.native_key = new_random_key
         st.rerun()
         
-    st.info("🔒 Enter your key to load history. To make this app remember your key across restarts, save it inside your Sketchware setup or copy the generated key below.")
+    st.info(text["info_locked"])
     st.stop()
 
 file_name = f"chats_{device_key}.json"
@@ -126,9 +173,10 @@ if "editing_chat_name" not in st.session_state:
     st.session_state.editing_chat_name = None
 
 with st.sidebar:
-    st.header("Chats")
-    if st.button("➕ New Chat"):
-        new_name = f"Chat {len(st.session_state.all_chats) + 1}"
+    st.header(text["chats_header"])
+    if st.button(text["new_chat_btn"]):
+        default_prefix = "Chat" if st.session_state.app_lang == "English" else "Чат"
+        new_name = f"{default_prefix} {len(st.session_state.all_chats) + 1}"
         st.session_state.all_chats[new_name] = []
         st.session_state.current_chat = new_name
         save_chats()
@@ -139,7 +187,7 @@ with st.sidebar:
         if st.session_state.editing_chat_name == chat_name:
             col_input, col_save = st.columns([0.7, 0.3])
             with col_input:
-                new_name = st.text_input("Rename:", value=chat_name, key=f"rename_{chat_name}", label_visibility="collapsed")
+                new_name = st.text_input(text["rename_label"], value=chat_name, key=f"rename_{chat_name}", label_visibility="collapsed")
             with col_save:
                 if st.button("💾", key=f"save_name_{chat_name}"):
                     if new_name and new_name != chat_name:
@@ -171,20 +219,21 @@ with st.sidebar:
                 if st.button("🗑", key=f"del_{chat_name}"):
                     del st.session_state.all_chats[chat_name]
                     if not st.session_state.all_chats:
-                        st.session_state.all_chats = {"Chat 1": []}
+                        default_prefix = "Chat 1" if st.session_state.app_lang == "English" else "Чат 1"
+                        st.session_state.all_chats = {default_prefix: []}
                     if st.session_state.current_chat == chat_name or st.session_state.current_chat not in st.session_state.all_chats:
                         st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
                     save_chats()
                     st.rerun()
 
     st.divider()
-    st.header("🎨 AI Personality")
-    ai_tone = st.selectbox("Choose Tone:", ["Normal", "Humor & Sarcasm", "Storyteller"])
+    st.header(text["ai_header"])
+    ai_tone = st.selectbox(text["tone_label"], ["Normal", "Humor & Sarcasm", "Storyteller"])
     
     st.divider()
-    st.header("🔑 Session Info")
-    st.success(f"Active Key: {device_key}")
-    if st.button("🔓 Logout / Clear Session"):
+    st.header(text["session_header"])
+    st.success(f"{text['active_key']} {device_key}")
+    if st.button(text["logout_btn"]):
         st.query_params.clear()
         st.session_state.native_key = None
         st.rerun()
@@ -243,16 +292,15 @@ for i, message in enumerate(messages):
         with st.chat_message("assistant"):
             st.markdown(message["content"])
 
-phrases = ["Say hello!", "Say hi!", "Welcome!", "Type here!", "Ready to chat!", "Write something cool!"]
 if "placeholder_text" not in st.session_state:
-    st.session_state.placeholder_text = random.choice(phrases)
+    st.session_state.placeholder_text = random.choice(text["phrases"])
 
 uploaded_file = st.file_uploader("🖼", type=["image"], label_visibility="collapsed")
 if uploaded_file:
     st.image(uploaded_file, width=150)
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
-    st.session_state.placeholder_text = random.choice(phrases)
+    st.session_state.placeholder_text = random.choice(text["phrases"])
     if uploaded_file:
         base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
         msg_content = [
@@ -288,31 +336,57 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             if "78297829" in str(user_text):
                 system_prompt = DEVELOPER_GUIDE
             else:
-                system_prompt = (
-                    "You are Phistashka AI, a friendly, vibrant, and polite conversational AI assistant.\n"
-                    "LANGUAGE RULE: You must always reply in the exact same language the user is speaking to you (e.g., if the user writes in Russian, reply in Russian. If they write in Ukrainian, reply in Ukrainian, etc.). Do not force English.\n"
-                    "EMOJI RULE: You must use between 1 and 4 emojis total per response (3 is recommended). Keep them contextually relevant and never spam them.\n\n"
-                )
-                
-                if ai_tone == "Humor & Sarcasm":
-                    system_prompt += "TONE MODIFIER: Use dry humor, jokes, and witty sarcasm in your responses while remaining helpful and keeping within the 1-4 emoji limit.\n\n"
-                elif ai_tone == "Storyteller":
-                    system_prompt += "TONE MODIFIER: Format responses creatively like a script, story plot, or immersive text-adventure game using descriptive details while keeping within the 1-4 emoji limit.\n\n"
-                
-                system_prompt += (
-                    "GREETING RULE:\n"
-                    "When the user greets you, say hello back and introduce yourself matching their language.\n\n"
-                    "SCHOOL QUESTIONS RULE:\n"
-                    "When the user sends a school question (such as math, English, etc.), you must follow this exact pattern layout (translated perfectly into the user's language):\n"
-                    "(Answer)\n"
-                    "(Extended steps)\n"
-                    "(Your comment (optional))\n\n"
-                    "Example layout to match:\n"
-                    "The answer is: 32\n"
-                    "1) firstly we divide, 82-738=92\n"
-                    "2) secondly we...\n"
-                    "Thats how we solve that math equasion."
-                )
+                # Injected selected language rules into LLM system instruction context
+                if st.session_state.app_lang == "English":
+                    system_prompt = (
+                        "You are Phistashka AI, a friendly, vibrant, and polite conversational AI assistant.\n"
+                        "LANGUAGE RULE: You must strictly reply in English at all times. Do not write in any other language.\n"
+                        "EMOJI RULE: You must use between 1 and 4 emojis total per response (3 is recommended). Keep them contextually relevant and never spam them.\n\n"
+                    )
+                    if ai_tone == "Humor & Sarcasm":
+                        system_prompt += "TONE MODIFIER: Use dry humor, jokes, and witty sarcasm in your responses while remaining helpful.\n\n"
+                    elif ai_tone == "Storyteller":
+                        system_prompt += "TONE MODIFIER: Format responses creatively like a script, story plot, or immersive text-adventure game using descriptive details.\n\n"
+                    
+                    system_prompt += (
+                        "GREETING RULE:\n"
+                        "When the user greets you, say hello back and introduce yourself matching their language.\n\n"
+                        "SCHOOL QUESTIONS RULE:\n"
+                        "When the user sends a school question (such as math, English, etc.), you must follow this exact pattern layout:\n"
+                        "(Answer)\n"
+                        "(Extended steps)\n"
+                        "(Your comment (optional))\n\n"
+                        "Example layout to match:\n"
+                        "The answer is: 32\n"
+                        "1) firstly we divide, 82-738=92\n"
+                        "2) secondly we...\n"
+                        "Thats how we solve that math equasion."
+                    )
+                else:
+                    system_prompt = (
+                        "You are Phistashka AI, a friendly, vibrant, and polite conversational AI assistant.\n"
+                        "LANGUAGE RULE: Вы должны строго отвечать только на русском языке. Использование других языков запрещено.\n"
+                        "EMOJI RULE: Вы должны использовать от 1 до 4 эмодзи во всем ответе (рекомендуется 3). Подбирайте их по смыслу и не спамьте ими.\n\n"
+                    )
+                    if ai_tone == "Humor & Sarcasm":
+                        system_prompt += "TONE MODIFIER: Используйте сухой юмор, шутки и колкий сарказм в ответах, при этом оставаясь полезным.\n\n"
+                    elif ai_tone == "Storyteller":
+                        system_prompt += "TONE MODIFIER: Форматируйте ответы творчески, как сценарий, сюжет истории или текстовую ролевую игру с описанием деталей.\n\n"
+                    
+                    system_prompt += (
+                        "GREETING RULE:\n"
+                        "Когда пользователь здоровается, ответьте на приветствие и представьтесь как Phistashka AI.\n\n"
+                        "SCHOOL QUESTIONS RULE:\n"
+                        "Когда пользователь отправляет школьный вопрос (математика, языки и т.д.), вы должны следовать строго этому шаблону оформления:\n"
+                        "(Ответ)\n"
+                        "(Подробные шаги решения)\n"
+                        "(Ваш комментарий (необязательно))\n\n"
+                        "Пример шаблона для соблюдения:\n"
+                        "Ответ: 32\n"
+                        "1) сначала мы делим, 82-738=92\n"
+                        "2) во-вторых мы...\n"
+                        "Вот так мы решаем это уравнение."
+                    )
             
             api_messages = [{"role": "system", "content": system_prompt}]
             
