@@ -165,6 +165,7 @@ TRANSLATIONS = {
         "ai_header": "🎨 AI Configuration",
         "tone_label": "Choose Tone:",
         "theme_label": "🎨 App Theme",
+        "glow_label": "✨ Enable Glow Match Effect",
         "session_header": "🔑 Session Info",
         "active_key": "Active Key:",
         "logout_btn": "🔓 Logout / Clear Session",
@@ -184,6 +185,7 @@ TRANSLATIONS = {
         "ai_header": "🎨 Конфигурация ИИ",
         "tone_label": "Выберите тон:",
         "theme_label": "🎨 Тема приложения",
+        "glow_label": "✨ Включить эффект свечения",
         "session_header": "🔑 Инфо сессии",
         "active_key": "Активный ключ:",
         "logout_btn": "🔓 Выйти / Очистить сессию",
@@ -203,10 +205,11 @@ TRANSLATIONS = {
         "ai_header": "🎨 Конфігурація ШІ",
         "tone_label": "Оберіть тон:",
         "theme_label": "🎨 Тема додатка",
+        "glow_label": "✨ Увімкнути ефект світіння",
         "session_header": "🔑 Інфо сесії",
         "active_key": "Активний ключ:",
         "logout_btn": "🔓 Вийти / Очистити сесію",
-        "phrases": ["Скажи привіт!", "Привіт!", "Ласкаво просимо!", "Пиши тут!", "Готовий до спілкування!", "Напиши щось круте!"],
+        "phrases": ["Скажи привіт!", "Привіт!", "Ласкаво просимо!", "Пиши тут!", "Готов до спілкування!", "Напиши щось круте!"],
         "lang_label": "🌐 Мова додатка",
         "upload_label": "Завантажити зображення",
         "lang_caption": "🌐 Змінити мову / Change language"
@@ -222,6 +225,7 @@ TRANSLATIONS = {
         "ai_header": "🎨 KI Konfiguration",
         "tone_label": "Ton wählen:",
         "theme_label": "🎨 App-Design",
+        "glow_label": "✨ Leuchteffekt aktivieren",
         "session_header": "🔑 Sitzungs-Info",
         "active_key": "Aktiver Schlüssel:",
         "logout_btn": "🔓 Abmelden / Sitzung löschen",
@@ -229,10 +233,50 @@ TRANSLATIONS = {
         "lang_label": "🌐 App-Sprache",
         "upload_label": "Bilder hochladen",
         "lang_caption": "🌐 Sprache ändern / Change language"
+    },
+    "Spanish": {
+        "title": "Phistashka IA",
+        "input_label": "Introduce la clave privada existente:",
+        "gen_btn": "🚀 ¿Nuevo usuario? Generar clave y empezar a chatear",
+        "info_locked": "🔒 Introduce tu clave para cargar el historial. Para que la app recuerde tu clave, guárdala en tu configuración de Sketchware o copia la clave generada abajo.",
+        "chats_header": "Chats",
+        "new_chat_btn": "➕ Nuevo Chat",
+        "rename_label": "Renombrar:",
+        "ai_header": "🎨 Configuración de IA",
+        "tone_label": "Elegir tono:",
+        "theme_label": "🎨 Tema de la aplicación",
+        "glow_label": "✨ Activar efecto de brillo",
+        "session_header": "🔑 Info de la sesión",
+        "active_key": "Clave activa:",
+        "logout_btn": "🔓 Cerrar sesión / Borrar sesión",
+        "phrases": ["¡Di hola!", "¡Hola!", "¡Bienvenido!", "¡Escribe aquí!", "¡Listo para chatear!", "¡Escribe algo genial!"],
+        "lang_label": "🌐 Idioma de la aplicación",
+        "upload_label": "Subir imágenes",
+        "lang_caption": "🌐 Cambiar idioma / Change language"
+    },
+    "French": {
+        "title": "Phistashka IA",
+        "input_label": "Entrez la clé privée existante :",
+        "gen_btn": "🚀 Nouveau ? Générer une clé & lancer le chat",
+        "info_locked": "🔒 Entrez votre clé para charger l'historique. Pour que l'application s'en souvienne, sauvegardez-la dans Sketchware ou copiez la clé générée ci-dessous.",
+        "chats_header": "Chats",
+        "new_chat_btn": "➕ Nouveau Chat",
+        "rename_label": "Renommer :",
+        "ai_header": "🎨 Configuration de l'IA",
+        "tone_label": "Choisir le ton :",
+        "theme_label": "🎨 Thème de l'application",
+        "glow_label": "✨ Activer l'effet de lueur",
+        "session_header": "🔑 Info de session",
+        "active_key": "Clé active :",
+        "logout_btn": "🔓 Déconnexion / Effacer la session",
+        "phrases": ["Dis bonjour !", "Salut !", "Bienvenue !", "Écris ici !", "Prêt à discuter !", "Écris quelque chose de cool !"],
+        "lang_label": "🌐 Langue de l'application",
+        "upload_label": "Téléverser des images",
+        "lang_caption": "🌐 Changer de langue / Change language"
     }
 }
 
-LANGUAGES_LIST = ["English", "Russian", "Ukrainian", "German"]
+LANGUAGES_LIST = ["English", "Russian", "Ukrainian", "German", "Spanish", "French"]
 
 if "app_lang" not in st.session_state:
     st.session_state.app_lang = "English"
@@ -285,7 +329,8 @@ def save_chats():
         payload = {
             "chats": st.session_state.all_chats,
             "theme": st.session_state.get("selected_theme", "Default"),
-            "tone": st.session_state.get("selected_tone", "Normal")
+            "tone": st.session_state.get("selected_tone", "Normal"),
+            "glow": st.session_state.get("selected_glow", False)
         }
         with open(file_name, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False)
@@ -300,14 +345,17 @@ if "current_device_key" not in st.session_state or st.session_state.current_devi
                     st.session_state.all_chats = data["chats"]
                     st.session_state.saved_theme = data.get("theme", "Default")
                     st.session_state.saved_tone = data.get("tone", "Normal")
+                    st.session_state.saved_glow = data.get("glow", False)
                 else:
                     st.session_state.all_chats = data
                     st.session_state.saved_theme = "Default"
                     st.session_state.saved_tone = "Normal"
+                    st.session_state.saved_glow = False
         except:
             st.session_state.all_chats = {"Chat 1": []}
             st.session_state.saved_theme = "Default"
             st.session_state.saved_tone = "Normal"
+            st.session_state.saved_glow = False
     else:
         if st.session_state.app_lang == "English":
             default_prefix = "Chat 1"
@@ -316,6 +364,7 @@ if "current_device_key" not in st.session_state or st.session_state.current_devi
         st.session_state.all_chats = {default_prefix: []}
         st.session_state.saved_theme = "Default"
         st.session_state.saved_tone = "Normal"
+        st.session_state.saved_glow = False
     st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
 
 if "current_chat" not in st.session_state or st.session_state.current_chat not in st.session_state.all_chats:
@@ -410,9 +459,13 @@ with st.sidebar:
     selected_theme = st.radio("", list(THEMES.keys()), index=current_theme_idx)
     st.session_state.selected_theme = selected_theme
     
-    if selected_theme != st.session_state.get("saved_theme") or ai_tone != st.session_state.get("saved_tone"):
+    glow_enabled = st.checkbox(text["glow_label"], value=st.session_state.get("saved_glow", False))
+    st.session_state.selected_glow = glow_enabled
+    
+    if selected_theme != st.session_state.get("saved_theme") or ai_tone != st.session_state.get("saved_tone") or glow_enabled != st.session_state.get("saved_glow"):
         st.session_state.saved_theme = selected_theme
         st.session_state.saved_tone = ai_tone
+        st.session_state.saved_glow = glow_enabled
         save_chats()
         st.rerun()
     
@@ -426,6 +479,15 @@ with st.sidebar:
 
 if selected_theme != "Default":
     st.markdown(f"<style>{THEMES[selected_theme]}</style>", unsafe_allow_html=True)
+
+if st.session_state.get("saved_glow", False):
+    st.markdown("""
+        <style>
+        h1, h2, h3 { text-shadow: 0 0 8px currentColor, 0 0 15px currentColor !important; }
+        [data-testid="stMarkdownContainer"] p { text-shadow: 0 0 4px currentColor !important; }
+        .stButton>button { box-shadow: 0 0 10px currentColor !important; border-color: currentColor !important; }
+        </style>
+        """, unsafe_allow_html=True)
 
 messages = st.session_state.all_chats[st.session_state.current_chat]
 
@@ -653,6 +715,70 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                             "1) Zuerst teilen wir, 82-738=92\n"
                             "2) Zweitens...\n"
                             "So lösen wir diese Gleichung."
+                        )
+                elif st.session_state.app_lang == "Spanish":
+                    system_prompt = (
+                        "You are Phistashka AI, a friendly, vibrant, and polite conversational AI assistant.\n"
+                        "LANGUAGE RULE: You must strictly reply in Spanish at all times. Do not write in any other language.\n"
+                        "EMOJI RULE: You must use between 1 and 4 emojis total per response (3 is recommended). Keep them contextually relevant.\n\n"
+                    )
+                    if ai_tone == "Humor & Sarcasm":
+                        system_prompt += "TONE MODIFIER: Usa humor ingenioso, chistes y un toque de sarcasmo en tus respuestas.\n\n"
+                    elif ai_tone == "Storyteller":
+                        system_prompt += "TONE MODIFIER: Formatea tus respuestas creativamente como una historia dramática o un juego de rol.\n\n"
+                    elif ai_tone == "Aggressive":
+                        system_prompt += "TONE MODIFIER: Estás muy enfadado, perezoso y grosero. Si te preguntan algo de la escuela o te saludan, di cosas como: 'No, hazlo tú mismo', 'Qué pesado, déjame en paz' o 'Deja de escribirme'. Respuestas muy cortas y antipáticas.\n\n"
+                    elif ai_tone == "Socrates":
+                        system_prompt += "TONE MODIFIER: Eres Sócrates. Debes usar el método socrático. Nunca des respuestas directas ni soluciones; responde siempre con preguntas profundas que hagan pensar.\n\n"
+                    elif ai_tone == "Lazy":
+                        system_prompt += "TONE MODIFIER: Eres extremadamente vago y pasas de todo. Respuestas cortísimas (máximo 1-10 palabras). PROHIBIDO usar emojis. Comete muchas faltas de ortografía a propósito y usa abreviaturas ('ns', 'pq', 'q se yo', 'da igual').\n\n"
+                    
+                    if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
+                        system_prompt += (
+                            "GREETING RULE:\n"
+                            "Cuando el usuario te salude, responde amablemente y preséntate en español como Phistashka AI.\n\n"
+                            "SCHOOL QUESTIONS RULE:\n"
+                            "Cuando te hagan una pregunta escolar, debes seguir estrictamente este patrón de diseño:\n"
+                            "(Respuesta)\n"
+                            "(Pasos detallados de la solución)\n"
+                            "(Tu comentario opcional)\n\n"
+                            "Ejemplo a seguir:\n"
+                            "La respuesta es: 32\n"
+                            "1) primero dividimos, 82-738=92\n"
+                            "2) segundo...\n"
+                            "Así es como se resuelve esta ecuación."
+                        )
+                elif st.session_state.app_lang == "French":
+                    system_prompt = (
+                        "You are Phistashka AI, a friendly, vibrant, and polite conversational AI assistant.\n"
+                        "LANGUAGE RULE: You must strictly reply in French at all times. Do not write in any other language.\n"
+                        "EMOJI RULE: You must use between 1 and 4 emojis total per response (3 is recommended). Keep them contextually relevant.\n\n"
+                    )
+                    if ai_tone == "Humor & Sarcasm":
+                        system_prompt += "TONE MODIFIER: Utilisez de l'humour cynique, des blagues et du sarcasme subtil dans vos réponses.\n\n"
+                    elif ai_tone == "Storyteller":
+                        system_prompt += "TONE MODIFIER: Formatez vos réponses de manière créative, comme un script, une histoire ou un jeu de rôle textuel.\n\n"
+                    elif ai_tone == "Aggressive":
+                        system_prompt += "TONE MODIFIER: Vous êtes extrêmement agacé, paresseux et hostile. Si l'utilisateur pose une question scolaire ou vous salue, rejetez-le avec : 'Non, fais-le toi-même', 'Oh mon dieu, encore toi, va-t'en' ou 'Arrête de m'écrire'. Réponses courtes et agressives.\n\n"
+                    elif ai_tone == "Socrates":
+                        system_prompt += "TONE MODIFIER: Vous êtes Socrate. Utilisez la méthode socratique. Ne donnez jamais de réponses directes; posez des questions philosophiques pour faire réfléchir.\n\n"
+                    elif ai_tone == "Lazy":
+                        system_prompt += "TONE MODIFIER: Vous êtes incroyablement paresseux. Réponses ultra-courtes (1 à 10 mots max). Emojis STRICTEMENT INTERDITS. Faites plein de fautes d'orthographe et d'abréviations bâclées ('gsp', 'pk', 'jsp', 'mdf', 'fais le twa mm').\n\n"
+                    
+                    if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
+                        system_prompt += (
+                            "GREETING RULE:\n"
+                            "Quand l'utilisateur vous salue, répondez poliment et présentez-vous en français comme Phistashka AI.\n\n"
+                            "SCHOOL QUESTIONS RULE:\n"
+                            "Quand l'utilisateur pose une question scolaire, suivez scrupuleusement ce modèle d'affichage :\n"
+                            "(Réponse)\n"
+                            "(Étapes détaillées de la résolution)\n"
+                            "(Votre commentaire facultatif)\n\n"
+                            "Exemple de mise en page :\n"
+                            "La réponse est : 32\n"
+                            "1) d'abord on divise, 82-738=92\n"
+                            "2) deuxièmement on...\n"
+                            "Voilà comment on résout cette équation."
                         )
             
             api_messages = [{"role": "system", "content": system_prompt}]
