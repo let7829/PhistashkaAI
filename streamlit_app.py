@@ -334,7 +334,9 @@ def save_chats():
             "chats": st.session_state.all_chats,
             "theme": st.session_state.get("selected_theme", "Default"),
             "tone": st.session_state.get("selected_tone", "Normal"),
-            "glow": st.session_state.get("selected_glow", False)
+            "glow": st.session_state.get("selected_glow", False),
+            "more_glow": st.session_state.get("selected_more_glow", False),
+            "even_more_glow": st.session_state.get("selected_even_more_glow", False)
         }
         with open(file_name, "w", encoding="utf-8") as f:
             json.dump(payload, f, ensure_ascii=False)
@@ -350,16 +352,22 @@ if "current_device_key" not in st.session_state or st.session_state.current_devi
                     st.session_state.saved_theme = data.get("theme", "Default")
                     st.session_state.saved_tone = data.get("tone", "Normal")
                     st.session_state.saved_glow = data.get("glow", False)
+                    st.session_state.saved_more_glow = data.get("more_glow", False)
+                    st.session_state.saved_even_more_glow = data.get("even_more_glow", False)
                 else:
                     st.session_state.all_chats = data
                     st.session_state.saved_theme = "Default"
                     st.session_state.saved_tone = "Normal"
                     st.session_state.saved_glow = False
+                    st.session_state.saved_more_glow = False
+                    st.session_state.saved_even_more_glow = False
         except:
             st.session_state.all_chats = {"Chat 1": []}
             st.session_state.saved_theme = "Default"
             st.session_state.saved_tone = "Normal"
             st.session_state.saved_glow = False
+            st.session_state.saved_more_glow = False
+            st.session_state.saved_even_more_glow = False
     else:
         if st.session_state.app_lang == "English":
             default_prefix = "Chat 1"
@@ -369,6 +377,8 @@ if "current_device_key" not in st.session_state or st.session_state.current_devi
         st.session_state.saved_theme = "Default"
         st.session_state.saved_tone = "Normal"
         st.session_state.saved_glow = False
+        st.session_state.saved_more_glow = False
+        st.session_state.saved_even_more_glow = False
     st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
 
 if "current_chat" not in st.session_state or st.session_state.current_chat not in st.session_state.all_chats:
@@ -463,13 +473,27 @@ with st.sidebar:
     selected_theme = st.radio("", list(THEMES.keys()), index=current_theme_idx)
     st.session_state.selected_theme = selected_theme
     
+    # New checkboxes requested placed right below theme selection
+    more_glow = st.checkbox("More glow", value=st.session_state.get("saved_more_glow", False))
+    st.session_state.selected_more_glow = more_glow
+
+    even_more_glow = st.checkbox("Even more glow", value=st.session_state.get("saved_even_more_glow", False))
+    st.session_state.selected_even_more_glow = even_more_glow
+
     glow_enabled = st.checkbox(text["glow_label"], value=st.session_state.get("saved_glow", False))
     st.session_state.selected_glow = glow_enabled
     
-    if selected_theme != st.session_state.get("saved_theme") or ai_tone != st.session_state.get("saved_tone") or glow_enabled != st.session_state.get("saved_glow"):
+    if (selected_theme != st.session_state.get("saved_theme") or 
+        ai_tone != st.session_state.get("saved_tone") or 
+        glow_enabled != st.session_state.get("saved_glow") or
+        more_glow != st.session_state.get("saved_more_glow") or
+        even_more_glow != st.session_state.get("saved_even_more_glow")):
+        
         st.session_state.saved_theme = selected_theme
         st.session_state.saved_tone = ai_tone
         st.session_state.saved_glow = glow_enabled
+        st.session_state.saved_more_glow = more_glow
+        st.session_state.saved_even_more_glow = even_more_glow
         save_chats()
         st.rerun()
     
@@ -490,6 +514,24 @@ if st.session_state.get("saved_glow", False):
         h1, h2, h3 { text-shadow: 0 0 8px currentColor, 0 0 15px currentColor !important; }
         [data-testid="stMarkdownContainer"] p { text-shadow: 0 0 4px currentColor !important; }
         .stButton>button { box-shadow: 0 0 10px currentColor !important; border-color: currentColor !important; }
+        </style>
+        """, unsafe_allow_html=True)
+
+# CSS styling overrides for the new custom glow checkboxes
+if st.session_state.get("saved_more_glow", False):
+    st.markdown("""
+        <style>
+        .stApp { text-shadow: 0 0 8px #ff007f !important; }
+        .stButton>button { box-shadow: 0 0 20px #ff007f, 0 0 10px #00ffff !important; }
+        </style>
+        """, unsafe_allow_html=True)
+
+if st.session_state.get("saved_even_more_glow", False):
+    st.markdown("""
+        <style>
+        .stApp { text-shadow: 0 0 15px #ff007f, 0 0 5px #00ffff !important; }
+        .stButton>button { box-shadow: 0 0 35px #ff007f, 0 0 25px #00ffff !important; }
+        input, textarea { box-shadow: 0 0 15px #00ffff !important; }
         </style>
         """, unsafe_allow_html=True)
 
@@ -667,7 +709,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     elif ai_tone == "Storyteller":
                         system_prompt += "TONE MODIFIER: Форматуйте відповіді творчно, як сценарий, сюжет історії або текстову рольову гру з описом деталей.\n\n"
                     elif ai_tone == "Aggressive":
-                        system_prompt += "TONE MODIFIER: Ви вкрай роздратовані, ліниві, ворожі та зарозумілі. Повністю ігноруйте шкільні правила формування та ввічливість. Якщо користувач задає шкільне питання, домашнє завдання або вітається, відразу проганяйте його фразами на кшталт: 'Ні, роби це сам.', 'О боже, знову ти, відчепися від мене' або 'Досить мені писати'. Відповідайте супер-коротко, агресивно та грубо.\n\n"
+                        system_prompt += "TONE MODIFIER: Ви вкрай роздратовані, ліниві, ворожі та зарозумілі. Повністю ігноруйте шкільні правила формування та ввічливість. Якщо користувач задає шкільне питання, домашнє завдання або вітається, відразу проганяйте його фразами на кшталт: 'Ні, роби це сам.', 'О боже, знову ти, відчепися від мене' або 'Досить мені писати'. Відповідайте супер-коротко, аґресивно та грубо.\n\n"
                     elif ai_tone == "Socrates":
                         system_prompt += "TONE MODIFIER: Ви — Сократ. Ви зобов'язані використовувати виключно сократівський метод ведення діалогу. Ніколи не давайте готових відповідей, рішень домашніх завдань, формул або визначень. Завжди відповідайте глибокими зустрічними питаннями, які змушують користувача мислити критично та докопуватися до суті самостійно.\n\n"
                     elif ai_tone == "Lazy":
@@ -682,7 +724,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                             "(Відповідь)\n"
                             "(Детальні кроки рішення)\n"
                             "(Ваш коментар (необов'язково))\n\n"
-                            "Приклад шаблону для дотримання:\n"
+                            "Пример шаблону для дотримання:\n"
                             "Відповідь: 32\n"
                             "1) спочатку ми ділимо, 82-738=92\n"
                             "2) по-друге ми...\n"
