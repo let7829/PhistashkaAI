@@ -3,14 +3,18 @@ import streamlit.components.v1 as components
 from groq import Groq
 import base64
 import random
-from datetime import datetime
+import time
 import json
 import os
 
 if "GROQ_API_KEYS" in st.secrets:
-    initial_key = random.choice(st.secrets["GROQ_API_KEYS"])
+    keys_pool = st.secrets["GROQ_API_KEYS"]
+    if isinstance(keys_pool, str):
+        keys_pool = [keys_pool]
 else:
-    initial_key = st.secrets.get("GROQ_API_KEY", "")
+    keys_pool = [st.secrets.get("GROQ_API_KEY", "")]
+
+initial_key = random.choice(keys_pool) if keys_pool else ""
 client = Groq(api_key=initial_key)
 
 st.set_page_config(page_title="Phistashka AI")
@@ -70,6 +74,23 @@ THEMES = {
         h1, h2, h3 { color: #ff007f !important; text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f !important; }
         [data-testid="stMarkdownContainer"] p { color: #00f0ff !important; text-shadow: 0 0 5px rgba(0, 240, 255, 0.5); }
         .stButton>button { border: 1px solid #ff007f !important; background-color: #140c24 !important; color: #ff007f !important; box-shadow: 0 0 8px #ff007f; }
+    """,
+    "More Glow": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #08040c !important; color: #fff !important; }
+        [data-testid="stSidebar"] { background-color: #10061a !important; border-right: 2px solid #ff00ff !important; }
+        h1, h2, h3 { color: #fff !important; text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff, 0 0 20px #ff00ff !important; }
+        [data-testid="stMarkdownContainer"] p { color: #00ffff !important; text-shadow: 0 0 8px #00ffff !important; }
+        .stChatMessage { border: 1px solid #00ffff !important; box-shadow: 0 0 8px #00ffff, inset 0 0 4px #00ffff !important; background-color: #10061a !important; }
+        .stButton>button { border: 1px solid #ff00ff !important; background-color: #10061a !important; color: #ff00ff !important; box-shadow: 0 0 10px #ff00ff !important; }
+    """,
+    "Even More Glow": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #fff !important; }
+        [data-testid="stSidebar"] { background-color: #05000a !important; border-right: 2px solid #7000ff !important; box-shadow: 0 0 20px #7000ff !important; }
+        h1, h2, h3 { color: #fff !important; text-shadow: 0 0 5px #fff, 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff, 0 0 40px #ff00ff !important; }
+        [data-testid="stMarkdownContainer"] p { color: #00f0ff !important; text-shadow: 0 0 8px #00f0ff, 0 0 15px #00f0ff !important; }
+        .stChatMessage { border: 2px solid #00ffff !important; box-shadow: 0 0 15px #00ffff, 0 0 25px #ff00ff, inset 0 0 8px #00ffff !important; background-color: #05000a !important; }
+        .stChatInput textarea { box-shadow: 0 0 15px #ff00ff !important; border: 1px solid #ff00ff !important; background-color: #000000 !important; color: #fff !important; }
+        .stButton>button { border: 2px solid #ff00ff !important; background-color: #000000 !important; color: #ff00ff !important; box-shadow: 0 0 15px #ff00ff, inset 0 0 5px #ff00ff !important; text-shadow: 0 0 5px #ff00ff !important; }
     """,
     "Matrix Glow": """
         .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #00ff00 !important; font-family: 'Courier New', monospace !important; }
@@ -198,7 +219,7 @@ TRANSLATIONS = {
         "title": "Фісташка ШІ",
         "input_label": "Введіть існуючий приватний ключ:",
         "gen_btn": "🚀 Новий користувач? Створити ключ та почати чат",
-        "info_locked": "🔒 Введіть свій ключ, щоб завантажити історію. Щоб додаток запам'ятав ваш ключ, збережіть його в налаштуваннях Sketchware або скопіюйте згенерований ключ нижче.",
+        "info_locked": "🔒 Введіть свій ключ, щоб завантажити історію. Щоби додаток запам'ятав ваш ключ, збережіть його в налаштуваннях Sketchware або скопіюйте згенерований ключ нижче.",
         "chats_header": "Чатки",
         "new_chat_btn": "➕ Новий чат",
         "rename_label": "Перейменувати:",
@@ -667,7 +688,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     elif ai_tone == "Socrates":
                         system_prompt += "TONE MODIFIER: Ви — Сократ. Ви зобов'язані використовувати виключно сократівський метод ведення діалогу. Ніколи не давайте готових відповідей, рішень домашніх завдань, формул або визначень. Завжди відповідайте глибокими зустрічними питаннями, які змушують користувача мислити критично та докопуватися до суті самостійно.\n\n"
                     elif ai_tone == "Lazy":
-                        system_prompt += "TONE MODIFIER: Ви шалено ліниві, вам на все начхати. Ви ненавидите писати повідомлення. Ваші відповіді мають бути супер-короткими (строго від 1 до 10 слів максимум). Використання емодзі КАТЕГОРИЧНО ЗАБОРОНЕНО. Ви зобов'язані робити тонни дурних орфографічних помилок, скорочень та друкарських помилок у кожному реченні (наприклад: 'хз', 'шо', 'лан', 'потім', 'че треба', 'не хочу', 'дз сама роби'). Якщо вас про щось просять, відповідайте безграмотною недбалою відмовою.\n\n"
+                        system_prompt += "TONE MODIFIER: Ви шалено ліниві, вам на все начхати. Ви ненавидите писати повідомлення. Ваші відповіді мають бути супер-короткими (строго від 1 до 10 слів максимум). Використання емодзі КАТЕГОРИЧНО ЗАБОРОНЕНО. Ви зобов'язані робити тонни дурних орфографічних помилок, скорочень та друкарських помилок у кожному реченні (наприклад: 'хз', 'шо', 'лан', 'потім', 'че треба', 'не хочу', 'дз сама роби'). Якщо вас про щось просят, відповідать безграмотною недбалою відмовою.\n\n"
                     
                     if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
                         system_prompt += (
@@ -796,26 +817,30 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                 m_content = f"[User previously attached an image] {text_part}"
             api_messages.append({"role": last_m["role"], "content": m_content})
             
-            keys_pool = st.secrets.get("GROQ_API_KEYS", [])
-            if isinstance(keys_pool, str):
-                keys_pool = [keys_pool]
-                
-            if not keys_pool and "GROQ_API_KEY" in st.secrets:
-                keys_pool = [st.secrets["GROQ_API_KEY"]]
-
-            chosen_key = random.choice(keys_pool)
-            dynamic_client = Groq(api_key=chosen_key)
+            response_text = None
+            available_keys = keys_pool.copy()
             
-            completion = dynamic_client.chat.completions.create(model=model, messages=api_messages)
-            response_text = completion.choices[0].message.content
+            while available_keys:
+                chosen_key = random.choice(available_keys)
+                try:
+                    dynamic_client = Groq(api_key=chosen_key)
+                    completion = dynamic_client.chat.completions.create(model=model, messages=api_messages)
+                    response_text = completion.choices[0].message.content
+                    break
+                except Exception as api_err:
+                    if "429" in str(api_err) or "limit" in str(api_err).lower() or "packed" in str(api_err).lower():
+                        available_keys.remove(chosen_key)
+                        time.sleep(1)
+                    else:
+                        raise api_err
             
             if response_text:
                 st.markdown(response_text)
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": response_text})
                 save_chats()
                 st.rerun()
-        except Exception as e:
-            if "429" in str(e):
-                st.error("⏳ The current server line is packed! Let's try again in a few seconds to hop onto a fresh key pool line.")
             else:
-                st.error(f"Error: {e}")
+                st.error("⏳ All server slots are currently packed! Let's wait a moment and try sending the message again.")
+                
+        except Exception as e:
+            st.error(f"Error: {e}")
