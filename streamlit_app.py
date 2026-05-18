@@ -75,23 +75,6 @@ THEMES = {
         [data-testid="stMarkdownContainer"] p { color: #00f0ff !important; text-shadow: 0 0 5px rgba(0, 240, 255, 0.5); }
         .stButton>button { border: 1px solid #ff007f !important; background-color: #140c24 !important; color: #ff007f !important; box-shadow: 0 0 8px #ff007f; }
     """,
-    "More Glow": """
-        .stApp, [data-testid="stAppViewContainer"] { background-color: #08040c !important; color: #fff !important; }
-        [data-testid="stSidebar"] { background-color: #10061a !important; border-right: 2px solid #ff00ff !important; }
-        h1, h2, h3 { color: #fff !important; text-shadow: 0 0 5px #ff00ff, 0 0 10px #ff00ff, 0 0 20px #ff00ff !important; }
-        [data-testid="stMarkdownContainer"] p { color: #00ffff !important; text-shadow: 0 0 8px #00ffff !important; }
-        .stChatMessage { border: 1px solid #00ffff !important; box-shadow: 0 0 8px #00ffff, inset 0 0 4px #00ffff !important; background-color: #10061a !important; }
-        .stButton>button { border: 1px solid #ff00ff !important; background-color: #10061a !important; color: #ff00ff !important; box-shadow: 0 0 10px #ff00ff !important; }
-    """,
-    "Even More Glow": """
-        .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #fff !important; }
-        [data-testid="stSidebar"] { background-color: #05000a !important; border-right: 2px solid #7000ff !important; box-shadow: 0 0 20px #7000ff !important; }
-        h1, h2, h3 { color: #fff !important; text-shadow: 0 0 5px #fff, 0 0 10px #ff00ff, 0 0 20px #ff00ff, 0 0 30px #ff00ff, 0 0 40px #ff00ff !important; }
-        [data-testid="stMarkdownContainer"] p { color: #00f0ff !important; text-shadow: 0 0 8px #00f0ff, 0 0 15px #00f0ff !important; }
-        .stChatMessage { border: 2px solid #00ffff !important; box-shadow: 0 0 15px #00ffff, 0 0 25px #ff00ff, inset 0 0 8px #00ffff !important; background-color: #05000a !important; }
-        .stChatInput textarea { box-shadow: 0 0 15px #ff00ff !important; border: 1px solid #ff00ff !important; background-color: #000000 !important; color: #fff !important; }
-        .stButton>button { border: 2px solid #ff00ff !important; background-color: #000000 !important; color: #ff00ff !important; box-shadow: 0 0 15px #ff00ff, inset 0 0 5px #ff00ff !important; text-shadow: 0 0 5px #ff00ff !important; }
-    """,
     "Matrix Glow": """
         .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #00ff00 !important; font-family: 'Courier New', monospace !important; }
         [data-testid="stSidebar"] { background-color: #001100 !important; border-right: 1px solid #00ff00 !important; }
