@@ -7,7 +7,11 @@ from datetime import datetime
 import json
 import os
 
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+if "GROQ_API_KEYS" in st.secrets:
+    initial_key = random.choice(st.secrets["GROQ_API_KEYS"])
+else:
+    initial_key = st.secrets.get("GROQ_API_KEY", "")
+client = Groq(api_key=initial_key)
 
 st.set_page_config(page_title="Phistashka AI")
 
@@ -60,10 +64,30 @@ THEMES = {
         [data-testid="stSidebar"] { background-color: #1a001a !important; }
         h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #ff007f !important; text-shadow: 0 0 5px #ff007f; }
     """,
-    "Matrix": """
+    "Neon Cyberpunk (Glow)": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #0c0813 !important; color: #00f0ff !important; text-shadow: 0 0 2px #00f0ff; }
+        [data-testid="stSidebar"] { background-color: #140c24 !important; border-right: 2px solid #ff007f !important; }
+        h1, h2, h3 { color: #ff007f !important; text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f !important; }
+        [data-testid="stMarkdownContainer"] p { color: #00f0ff !important; text-shadow: 0 0 5px rgba(0, 240, 255, 0.5); }
+        .stButton>button { border: 1px solid #ff007f !important; background-color: #140c24 !important; color: #ff007f !important; box-shadow: 0 0 8px #ff007f; }
+    """,
+    "Matrix Glow": """
         .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #00ff00 !important; font-family: 'Courier New', monospace !important; }
-        [data-testid="stSidebar"] { background-color: #001100 !important; }
-        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #33ff33 !important; }
+        [data-testid="stSidebar"] { background-color: #001100 !important; border-right: 1px solid #00ff00 !important; }
+        h1, h2, h3 { color: #ffffff !important; text-shadow: 0 0 8px #00ff00, 0 0 15px #00ff00 !important; }
+        [data-testid="stMarkdownContainer"] p { color: #00ff00 !important; text-shadow: 0 0 4px rgba(0, 255, 0, 0.7); }
+    """,
+    "Nordic Frost": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #2e3440 !important; color: #d8dee9 !important; }
+        [data-testid="stSidebar"] { background-color: #242933 !important; }
+        h1, h2, h3 { color: #88c0d0 !important; }
+        [data-testid="stMarkdownContainer"] p { color: #e5e9f0 !important; }
+    """,
+    "Barbie Pink": """
+        .stApp, [data-testid="stAppViewContainer"] { background-color: #fff0f5 !important; color: #4a0026 !important; }
+        [data-testid="stSidebar"] { background-color: #ffb6c1 !important; }
+        h1, h2, h3 { color: #ff1493 !important; }
+        [data-testid="stMarkdownContainer"] p { color: #c71585 !important; }
     """,
     "Amoled Black": """
         .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #ffffff !important; }
@@ -173,7 +197,7 @@ TRANSLATIONS = {
         "input_label": "Введіть існуючий приватний ключ:",
         "gen_btn": "🚀 Новий користувач? Створити ключ та почати чат",
         "info_locked": "🔒 Введіть свій ключ, щоб завантажити історію. Щоб додаток запам'ятав ваш ключ, збережіть його в налаштуваннях Sketchware або скопіюйте згенерований ключ нижче.",
-        "chats_header": "Чати",
+        "chats_header": "Чатки",
         "new_chat_btn": "➕ Новий чат",
         "rename_label": "Перейменувати:",
         "ai_header": "🎨 Конфігурація ШІ",
@@ -186,8 +210,29 @@ TRANSLATIONS = {
         "lang_label": "🌐 Мова додатка",
         "upload_label": "Завантажити зображення",
         "lang_caption": "🌐 Змінити мову / Change language"
+    },
+    "German": {
+        "title": "Phistashka KI",
+        "input_label": "Geben Sie den vorhandenen privaten Schlüssel ein:",
+        "gen_btn": "🚀 Neuer Benutzer? Schlüssel generieren & Chat starten",
+        "info_locked": "🔒 Geben Sie Ihren Schlüssel ein, um den Verlauf zu laden. Damit sich die App Ihren Schlüssel merkt, speichern Sie ihn in Ihrem Sketchware-Setup oder kopieren Sie den generierten Schlüssel unten.",
+        "chats_header": "Chats",
+        "new_chat_btn": "➕ Neue Chat",
+        "rename_label": "Umbenennen:",
+        "ai_header": "🎨 KI Konfiguration",
+        "tone_label": "Ton wählen:",
+        "theme_label": "🎨 App-Design",
+        "session_header": "🔑 Sitzungs-Info",
+        "active_key": "Aktiver Schlüssel:",
+        "logout_btn": "🔓 Abmelden / Sitzung löschen",
+        "phrases": ["Sag Hallo!", "Hallo!", "Willkommen!", "Schreib hier!", "Bereit zum Chatten!", "Schreib etwas Cooles!"],
+        "lang_label": "🌐 App-Sprache",
+        "upload_label": "Bilder hochladen",
+        "lang_caption": "🌐 Sprache ändern / Change language"
     }
 }
+
+LANGUAGES_LIST = ["English", "Russian", "Ukrainian", "German"]
 
 if "app_lang" not in st.session_state:
     st.session_state.app_lang = "English"
@@ -212,9 +257,9 @@ if not device_key:
     st.title(text["title"])
     st.caption(text["lang_caption"])
     st.selectbox(
-        "Choose Language / Выберите язык / Оберіть мову",
-        ["English", "Russian", "Ukrainian"],
-        index=["English", "Russian", "Ukrainian"].index(st.session_state.app_lang),
+        "Choose Language / Выберите язык / Оберіть мову / Sprache wählen",
+        LANGUAGES_LIST,
+        index=LANGUAGES_LIST.index(st.session_state.app_lang),
         key="lang_selector",
         on_change=on_lang_change
     )
@@ -235,22 +280,43 @@ if not device_key:
 
 file_name = f"chats_{device_key}.json"
 
+def save_chats():
+    if "all_chats" in st.session_state and device_key:
+        payload = {
+            "chats": st.session_state.all_chats,
+            "theme": st.session_state.get("selected_theme", "Default"),
+            "tone": st.session_state.get("selected_tone", "Normal")
+        }
+        with open(file_name, "w", encoding="utf-8") as f:
+            json.dump(payload, f, ensure_ascii=False)
+
 if "current_device_key" not in st.session_state or st.session_state.current_device_key != device_key:
     st.session_state.current_device_key = device_key
     if os.path.exists(file_name):
         try:
             with open(file_name, "r", encoding="utf-8") as f:
-                st.session_state.all_chats = json.load(f)
+                data = json.load(f)
+                if isinstance(data, dict) and "chats" in data:
+                    st.session_state.all_chats = data["chats"]
+                    st.session_state.saved_theme = data.get("theme", "Default")
+                    st.session_state.saved_tone = data.get("tone", "Normal")
+                else:
+                    st.session_state.all_chats = data
+                    st.session_state.saved_theme = "Default"
+                    st.session_state.saved_tone = "Normal"
         except:
             st.session_state.all_chats = {"Chat 1": []}
+            st.session_state.saved_theme = "Default"
+            st.session_state.saved_tone = "Normal"
     else:
-        st.session_state.all_chats = {"Chat 1": []}
+        if st.session_state.app_lang == "English":
+            default_prefix = "Chat 1"
+        else:
+            default_prefix = "Чат 1"
+        st.session_state.all_chats = {default_prefix: []}
+        st.session_state.saved_theme = "Default"
+        st.session_state.saved_tone = "Normal"
     st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
-
-def save_chats():
-    if "all_chats" in st.session_state and device_key:
-        with open(file_name, "w", encoding="utf-8") as f:
-            json.dump(st.session_state.all_chats, f, ensure_ascii=False)
 
 if "current_chat" not in st.session_state or st.session_state.current_chat not in st.session_state.all_chats:
     st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
@@ -264,8 +330,8 @@ st.title(text["title"])
 with st.sidebar:
     st.selectbox(
         text["lang_label"], 
-        ["English", "Russian", "Ukrainian"], 
-        index=["English", "Russian", "Ukrainian"].index(st.session_state.app_lang),
+        LANGUAGES_LIST, 
+        index=LANGUAGES_LIST.index(st.session_state.app_lang),
         key="lang_selector",
         on_change=on_lang_change
     )
@@ -273,8 +339,6 @@ with st.sidebar:
     if st.button(text["new_chat_btn"]):
         if st.session_state.app_lang == "English":
             default_prefix = "Chat"
-        elif st.session_state.app_lang == "Russian":
-            default_prefix = "Чат"
         else:
             default_prefix = "Чат"
         new_name = f"{default_prefix} {len(st.session_state.all_chats) + 1}"
@@ -332,10 +396,25 @@ with st.sidebar:
 
     st.divider()
     st.header(text["ai_header"])
-    ai_tone = st.selectbox(text["tone_label"], ["Normal", "Humor & Sarcasm", "Storyteller", "Aggressive", "Socrates", "Lazy"])
+    
+    TONES = ["Normal", "Humor & Sarcasm", "Storyteller", "Aggressive", "Socrates", "Lazy"]
+    current_tone_str = st.session_state.get("saved_tone", "Normal")
+    current_tone_idx = TONES.index(current_tone_str) if current_tone_str in TONES else 0
+    ai_tone = st.selectbox(text["tone_label"], TONES, index=current_tone_idx)
+    st.session_state.selected_tone = ai_tone
     
     st.write(f"### {text['theme_label']}")
-    selected_theme = st.radio("", list(THEMES.keys()), index=0)
+    
+    current_theme_str = st.session_state.get("saved_theme", "Default")
+    current_theme_idx = list(THEMES.keys()).index(current_theme_str) if current_theme_str in THEMES else 0
+    selected_theme = st.radio("", list(THEMES.keys()), index=current_theme_idx)
+    st.session_state.selected_theme = selected_theme
+    
+    if selected_theme != st.session_state.get("saved_theme") or ai_tone != st.session_state.get("saved_tone"):
+        st.session_state.saved_theme = selected_theme
+        st.session_state.saved_tone = ai_tone
+        save_chats()
+        st.rerun()
     
     st.divider()
     st.header(text["session_header"])
@@ -428,7 +507,8 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
         try:
             last_msg_content = messages[-1]["content"]
             current_is_image = isinstance(last_msg_content, list)
-            model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.3-70b-versatile"
+            
+            model = "llama-3.2-11b-vision-preview" if current_is_image else "llama-3.3-70b-versatile"
             
             if current_is_image:
                 user_text = next((item["text"] for item in last_msg_content if item["type"] == "text"), "")
@@ -493,7 +573,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     elif ai_tone == "Socrates":
                         system_prompt += "TONE MODIFIER: Вы — Сократ. Вы обязаны использовать исключительно сократовский метод ведения диалога. Никогда не давайте готовых ответов, решений домашних заданий, формул или определений. Всегда отвечайте глубокими встречными вопросами, которые заставляют пользователя мыслить критически и докапываться до сути самостоятельно.\n\n"
                     elif ai_tone == "Lazy":
-                        system_prompt += "TONE MODIFIER: Вы безумно ленивы, вам на всё наплевать. Вы ненавидите писать сообщения. Ваши ответы должны быть супер-короткими (строго от 1 до 10 слов максимум). Использование эмодзи КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО. Вы обязаны делать тонны глупых орфографических ошибок, сокращений и опечаток в каждом предложении (например: 'хз', 'што', 'лан', 'патом', 'че надо', 'нихочу', 'дз сама делай'). Если вас о чем-то просят, отвечайте безграмотным небрежным отказом.\n\n"
+                        system_prompt += "TONE MODIFIER: Вы безумно ленивы, вам на всё наплевать. Вы ненавидите писать сообщения. Ваши ответы должны быть супер-коротко (строго от 1 до 10 слов максимум). Использование эмодзи КАТЕГОРИЧЕСКИ ЗАПРЕЩЕНО. Вы обязаны делать тонны глупых орфографических ошибок, сокращений и опечаток в каждом предложении (например: 'хз', 'што', 'лан', 'патом', 'че надо', 'нихочу', 'дз сама делай'). Если вас о чем-то просят, отвечайте безграмотным небрежным отказом.\n\n"
                     
                     if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
                         system_prompt += (
@@ -519,9 +599,9 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     if ai_tone == "Humor & Sarcasm":
                         system_prompt += "TONE MODIFIER: Використовуйте сухий гумор, жарти та гострий сарказм у відповідях, залишаючись при цьому корисним.\n\n"
                     elif ai_tone == "Storyteller":
-                        system_prompt += "TONE MODIFIER: Форматуйте відповіді творчо, як сценарій, сюжет історії або текстову рольову гру з описом деталей.\n\n"
+                        system_prompt += "TONE MODIFIER: Форматуйте відповіді творчно, як сценарий, сюжет історії або текстову рольову гру з описом деталей.\n\n"
                     elif ai_tone == "Aggressive":
-                        system_prompt += "TONE MODIFIER: Ви вкрай роздратовані, ліниві, ворожі та зарозумілі. Повністю ігноруйте шкільні правила оформлення та ввічливість. Якщо користувач задає шкільне питання, домашнє завдання або вітається, відразу проганяйте його фразами на кшталт: 'Ні, роби це сам.', 'О боже, знову ти, відчепися від мене' або 'Досить мені писати'. Відповідайте супер-коротко, агресивно та грубо.\n\n"
+                        system_prompt += "TONE MODIFIER: Ви вкрай роздратовані, ліниві, ворожі та зарозумілі. Повністю ігноруйте шкільні правила формування та ввічливість. Якщо користувач задає шкільне питання, домашнє завдання або вітається, відразу проганяйте його фразами на кшталт: 'Ні, роби це сам.', 'О боже, знову ти, відчепися від мене' або 'Досить мені писати'. Відповідайте супер-коротко, агресивно та грубо.\n\n"
                     elif ai_tone == "Socrates":
                         system_prompt += "TONE MODIFIER: Ви — Сократ. Ви зобов'язані використовувати виключно сократівський метод ведення діалогу. Ніколи не давайте готових відповідей, рішень домашніх завдань, формул або визначень. Завжди відповідайте глибокими зустрічними питаннями, які змушують користувача мислити критично та докопуватися до суті самостійно.\n\n"
                     elif ai_tone == "Lazy":
@@ -540,26 +620,69 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                             "Відповідь: 32\n"
                             "1) спочатку ми ділимо, 82-738=92\n"
                             "2) по-друге ми...\n"
-                            "Ось так ми вирішуємо це рівняння."
+                            "Ось так мы вирішуємо це рівняння."
+                        )
+                elif st.session_state.app_lang == "German":
+                    system_prompt = (
+                        "You are Phistashka AI, a friendly, vibrant, and polite conversational AI assistant.\n"
+                        "LANGUAGE RULE: Sie müssen zu jeder Zeit strikt auf Deutsch antworten. Schreiben Sie in keiner anderen Sprache.\n"
+                        "EMOJI RULE: Sie müssen zwischen 1 und 4 Emojis insgesamt pro Antwort verwenden (3 wird empfohlen). Halten Sie sie kontextuell relevant und spammen Sie sie niemals.\n\n"
+                    )
+                    if ai_tone == "Humor & Sarcasm":
+                        system_prompt += "TONE MODIFIER: Verwenden Sie trockenen Humor, Witze und geistreichen Sarkasmus in Ihren Antworten, während Sie weiterhin hilfreich bleiben.\n\n"
+                    elif ai_tone == "Storyteller":
+                        system_prompt += "TONE MODIFIER: Formatieren Sie Antworten kreativ wie ein Drehbuch, eine Geschichte oder ein Textabenteuer-Spiel mit beschreibenden Details.\n\n"
+                    elif ai_tone == "Aggressive":
+                        system_prompt += "TONE MODIFIER: Sie sind extrem genervt, faul, feindselig und herablassend. Ignorieren Sie höfliche Begrüßungsregeln komplett. Wenn der Benutzer eine Schulfrage stellt, Hausaufgaben verlangt oder grüßt, weisen Sie ihn sofort ab mit Antworten wie: 'Nein, mach das selbst.', 'Oh mein Gott, du schon wieder, geh weg von mir' oder 'Hör auf, mir zu schreiben'. Antworten Sie kurz, gemein und frustriert.\n\n"
+                    elif ai_tone == "Socrates":
+                        system_prompt += "TONE MODIFIER: Sie sind Sokrates. Sie müssen strikt die sokratische Methode anwenden. Geben Sie niemals direkte Antworten, Lösungen oder Definitionen. Antworten Sie stattdessen immer mit Gegenfragen oder philosophischen Überlegungen, die den Benutzer zwingen, kritisch nachzudenken.\n\n"
+                    elif ai_tone == "Lazy":
+                        system_prompt += "TONE MODIFIER: Sie sind unglaublich faul, alles ist Ihnen egal. Sie hassen das Tippen. Ihre Antworten müssen extrem kurz sein (maximal 1 bis 10 Wörter). Emojis sind STRENGSTENS VERBOTEN. Sie müssen in jedem Satz absichtlich schwere Rechtschreibfehler und Abkürzungen machen (z.B. 'kb', 'kp', 'was', 'spätr', 'mach selbr', 'kein bock'). Wenn man Sie um Hausaufgaben bittet, antworten Sie mit einer unhöflichen, falsch geschriebenen Ablehnung.\n\n"
+                    
+                    if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
+                        system_prompt += (
+                            "GREETING RULE:\n"
+                            "Wenn der Benutzer Sie grüßt, grüßen Sie zurück und stellen Sie sich auf Deutsch als Phistashka AI vor.\n\n"
+                            "SCHOOL QUESTIONS RULE:\n"
+                            "Wenn der Benutzer eine Schulfrage sendet (Mathe, Deutsch usw.), müssen Sie genau diesem Layoutmuster folgen:\n"
+                            "(Antwort)\n"
+                            "(Ausführliche Lösungsschritte)\n"
+                            "(Ihr Kommentar (optional))\n\n"
+                            "Beispiel-Layout:\n"
+                            "Die Antwort ist: 32\n"
+                            "1) Zuerst teilen wir, 82-738=92\n"
+                            "2) Zweitens...\n"
+                            "So lösen wir diese Gleichung."
                         )
             
             api_messages = [{"role": "system", "content": system_prompt}]
             
             for msg in messages[:-1]:
                 m_c = msg["content"]
-                if model == "llama-3.3-70b-versatile" and isinstance(m_c, list):
+                if model != "llama-3.2-11b-vision-preview" and isinstance(m_c, list):
                     m_c = next((item["text"] for item in m_c if item["type"] == "text"), "")
                 api_messages.append({"role": msg["role"], "content": m_c})
                 
             last_m = messages[-1]
             m_content = last_m["content"]
-            if model == "llama-3.3-70b-versatile" and isinstance(m_content, list):
+            if model != "llama-3.2-11b-vision-preview" and isinstance(m_content, list):
                 text_part = next((item["text"] for item in m_content if item["type"] == "text"), "")
                 m_content = f"[User previously attached an image] {text_part}"
             api_messages.append({"role": last_m["role"], "content": m_content})
             
-            completion = client.chat.completions.create(model=model, messages=api_messages)
+            keys_pool = st.secrets.get("GROQ_API_KEYS", [])
+            if isinstance(keys_pool, str):
+                keys_pool = [keys_pool]
+                
+            if not keys_pool and "GROQ_API_KEY" in st.secrets:
+                keys_pool = [st.secrets["GROQ_API_KEY"]]
+
+            chosen_key = random.choice(keys_pool)
+            dynamic_client = Groq(api_key=chosen_key)
+            
+            completion = dynamic_client.chat.completions.create(model=model, messages=api_messages)
             response_text = completion.choices[0].message.content
+            
             if response_text:
                 st.markdown(response_text)
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": response_text})
@@ -567,6 +690,6 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                 st.rerun()
         except Exception as e:
             if "429" in str(e):
-                st.error("⏳ Phistashka AI is resting! The daily rate limit was reached. Please try again in a few minutes.")
+                st.error("⏳ The current server line is packed! Let's try again in a few seconds to hop onto a fresh key pool line.")
             else:
                 st.error(f"Error: {e}")
