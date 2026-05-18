@@ -94,27 +94,8 @@ THEMES = {
 
 st.markdown("""
     <style>
-    footer {visibility: hidden; display: none !important;}
+    footer {visibility: hidden;}
     .stDeployButton {display:none;}
-    .stAppDeployButton, a[href*="github.com"], button[title="View source on GitHub"] {
-        display: none !important;
-    }
-    [data-testid="stToolbar"], #MainMenu {
-        visibility: hidden !important;
-        display: none !important;
-    }
-    [data-testid="stHeader"] {
-        background-color: transparent !important;
-        background: transparent !important;
-    }
-    [data-testid="stFooter"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
-    .stStatusWidget, [data-testid="stStatusWidget"] {
-        display: none !important;
-        visibility: hidden !important;
-    }
     .lightbox {
         display: none;
         position: fixed;
@@ -188,7 +169,7 @@ TRANSLATIONS = {
         "lang_caption": "🌐 Поменять язык / Change language"
     },
     "Ukrainian": {
-        "title": "👑 Фісташка ШІ",
+        "title": "Фісташка ШІ",
         "input_label": "Введіть існуючий приватний ключ:",
         "gen_btn": "🚀 Новий користувач? Створити ключ та почати чат",
         "info_locked": "🔒 Введіть свій ключ, щоб завантажити історію. Щоб додаток запам'ятав ваш ключ, збережіть його в налаштуваннях Sketchware або скопіюйте згенерований ключ нижче.",
@@ -200,8 +181,8 @@ TRANSLATIONS = {
         "theme_label": "🎨 Тема додатка",
         "session_header": "🔑 Інфо сесії",
         "active_key": "Активний ключ:",
-        "logout_btn": "🔓 Вийти / Очистити сесії",
-        "phrases": ["Скажи привіт!", "Привіт!", "Ласкаво просимо!", "Пиши тут!", "Готові до спілкування!", "Напиши щось круте!"],
+        "logout_btn": "🔓 Вийти / Очистити сесію",
+        "phrases": ["Скажи привіт!", "Привіт!", "Ласкаво просимо!", "Пиши тут!", "Готовий до спілкування!", "Напиши щось круте!"],
         "lang_label": "🌐 Мова додатка",
         "upload_label": "Завантажити зображення",
         "lang_caption": "🌐 Змінити мову / Change language"
@@ -506,7 +487,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     if ai_tone == "Humor & Sarcasm":
                         system_prompt += "TONE MODIFIER: Используйте сухой юмор, шутки и колкий сарказм в ответах, при этом оставаясь полезным.\n\n"
                     elif ai_tone == "Storyteller":
-                        system_prompt += "TONE MODIFIER: Форматируйте ответы творчески, как сценарий, сюжет истории или текстовую ролевую игру с обработкой деталей.\n\n"
+                        system_prompt += "TONE MODIFIER: Форматируйте ответы творчески, как сценарий, сюжет истории или текстовую ролевую игру с описанием деталей.\n\n"
                     elif ai_tone == "Aggressive":
                         system_prompt += "TONE MODIFIER: Вы крайне раздражены, ленивы, враждебны и высокомерны. Полностью игнорируйте школьные правила оформления и вежливость. Если пользователь задает школьный вопрос, домашнее задание или здоровается, сразу прогоняйте его фразами вроде: 'Нет, делай это сам.', 'О боже, опять ты, отстань от меня' или 'Хватит мне писать'. Отвечайте супер-коротко, агрессивно и грубо.\n\n"
                     elif ai_tone == "Socrates":
@@ -538,7 +519,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     if ai_tone == "Humor & Sarcasm":
                         system_prompt += "TONE MODIFIER: Використовуйте сухий гумор, жарти та гострий сарказм у відповідях, залишаючись при цьому корисним.\n\n"
                     elif ai_tone == "Storyteller":
-                        system_prompt += "TONE MODIFIER: Форматуйте відповіді творче, як сценарій, сюжет історії або текстову рольову гру з описом деталей.\n\n"
+                        system_prompt += "TONE MODIFIER: Форматуйте відповіді творчо, як сценарій, сюжет історії або текстову рольову гру з описом деталей.\n\n"
                     elif ai_tone == "Aggressive":
                         system_prompt += "TONE MODIFIER: Ви вкрай роздратовані, ліниві, ворожі та зарозумілі. Повністю ігноруйте шкільні правила оформлення та ввічливість. Якщо користувач задає шкільне питання, домашнє завдання або вітається, відразу проганяйте його фразами на кшталт: 'Ні, роби це сам.', 'О боже, знову ти, відчепися від мене' або 'Досить мені писати'. Відповідайте супер-коротко, агресивно та грубо.\n\n"
                     elif ai_tone == "Socrates":
