@@ -92,10 +92,29 @@ THEMES = {
     """,
 }
 
+# Strict mobile cleaning applied here
 st.markdown("""
     <style>
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
+    
+    /* Hide GitHub Logo and Deploy details */
+    .stAppDeployButton, a[href*="github.com"], button[title="View source on GitHub"] {
+        display: none !important;
+    }
+    
+    /* Hide default toolbar/hamburger main menu */
+    [data-testid="stToolbar"], #MainMenu, [data-testid="stHeader"] {
+        visibility: hidden !important;
+        display: none !important;
+    }
+    
+    /* Hide purple loading icon at bottom right */
+    .stStatusWidget, [data-testid="stStatusWidget"] {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
     .lightbox {
         display: none;
         position: fixed;
@@ -181,8 +200,8 @@ TRANSLATIONS = {
         "theme_label": "🎨 Тема додатка",
         "session_header": "🔑 Інфо сесії",
         "active_key": "Активний ключ:",
-        "logout_btn": "🔓 Вийти / Очистити сесію",
-        "phrases": ["Скажи привіт!", "Привіт!", "Ласкаво просимо!", "Пиши тут!", "Готовий до спілкування!", "Напиши щось круте!"],
+        "logout_btn": "🔓 Вийти / Очистити сесії",
+        "phrases": ["Скажи привіт!", "Привіт!", "Ласкаво просимо!", "Пиши тут!", "Готові до спілкування!", "Напиши щось круте!"],
         "lang_label": "🌐 Мова додатка",
         "upload_label": "Завантажити зображення",
         "lang_caption": "🌐 Змінити мову / Change language"
@@ -519,11 +538,11 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     if ai_tone == "Humor & Sarcasm":
                         system_prompt += "TONE MODIFIER: Використовуйте сухий гумор, жарти та гострий сарказм у відповідях, залишаючись при цьому корисним.\n\n"
                     elif ai_tone == "Storyteller":
-                        system_prompt += "TONE MODIFIER: Форматуйте відповіді творчо, як сценарій, сюжет історії або текстову рольову гру з описом деталей.\n\n"
+                        system_prompt += "TONE MODIFIER: Форматуйте відповіді творчески, як сценарий, сюжет історії або текстову рольову гру з описом деталей.\n\n"
                     elif ai_tone == "Aggressive":
                         system_prompt += "TONE MODIFIER: Ви вкрай роздратовані, ліниві, ворожі та зарозумілі. Повністю ігноруйте шкільні правила оформлення та ввічливість. Якщо користувач задає шкільне питання, домашнє завдання або вітається, відразу проганяйте його фразами на кшталт: 'Ні, роби це сам.', 'О боже, знову ти, відчепися від мене' або 'Досить мені писати'. Відповідайте супер-коротко, агресивно та грубо.\n\n"
                     elif ai_tone == "Socrates":
-                        system_prompt += "TONE MODIFIER: Ви — Сократ. Ви зобов'язані використовувати виключно сократівський метод ведення діалогу. Ніколи не давайте готових відповідей, рішень домашніх завдань, формул або визначень. Завжди відповідайте глибокими зустрічними питаннями, які змушують користувача мислити критично та докопуватися до суті самостійно.\n\n"
+                        system_prompt += "TONE MODIFIER: Ви — Сократ. Ви зобов'язані використовувати виключно сократівський метод ведення діалогу. Нікої не давайте готових відповідей, рішень домашніх завдань, формул або визначень. Завжди відповідайте глибокими зустрічними питаннями, які змушують користувача мислити критично та докопуватися до суті самостійно.\n\n"
                     elif ai_tone == "Lazy":
                         system_prompt += "TONE MODIFIER: Ви шалено ліниві, вам на все начхати. Ви ненавидите писати повідомлення. Ваші відповіді мають бути супер-короткими (строго від 1 до 10 слів максимум). Використання емодзі КАТЕГОРИЧНО ЗАБОРОНЕНО. Ви зобов'язані робити тонни дурних орфографічних помилок, скорочень та друкарських помилок у кожному реченні (наприклад: 'хз', 'шо', 'лан', 'потім', 'че треба', 'не хочу', 'дз сама роби'). Якщо вас про щось просять, відповідайте безграмотною недбалою відмовою.\n\n"
                     
