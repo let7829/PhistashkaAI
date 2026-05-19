@@ -120,6 +120,24 @@ THEMES = {
     """,
 }
 
+THEME_GLOW_COLORS = {
+    "Default": {"primary": "#00f0ff", "secondary": "#ff00ff"},
+    "Dark Blue": {"primary": "#58a6ff", "secondary": "#1f6feb"},
+    "Dark Green": {"primary": "#4ade80", "secondary": "#238636"},
+    "Dark Red": {"primary": "#f87171", "secondary": "#da3633"},
+    "Aurora": {"primary": "#c084fc", "secondary": "#818cf8"},
+    "Cyberpunk": {"primary": "#00ffcc", "secondary": "#ff007f"},
+    "Neon Cyberpunk (Glow)": {"primary": "#00f0ff", "secondary": "#ff007f"},
+    "Matrix Glow": {"primary": "#00ff00", "secondary": "#003300"},
+    "Nordic Frost": {"primary": "#88c0d0", "secondary": "#81a1c1"},
+    "Barbie Pink": {"primary": "#ff1493", "secondary": "#ff69b4"},
+    "Amoled Black": {"primary": "#ffffff", "secondary": "#555555"},
+    "Sakura": {"primary": "#ff69b4", "secondary": "#ffb6c1"},
+    "Dracula": {"primary": "#ff79c6", "secondary": "#bd93f9"},
+    "Sunset": {"primary": "#fb923c", "secondary": "#f43f5e"},
+    "Ocean Breeze": {"primary": "#38bdf8", "secondary": "#0284c7"}
+}
+
 st.markdown("""
     <style>
     footer {visibility: hidden;}
@@ -212,7 +230,7 @@ TRANSLATIONS = {
         "glow_label": "✨ Увімкнути ефект світіння",
         "session_header": "🔑 Інфо сесії",
         "active_key": "Активний ключ:",
-        "logout_btn": "🔓 Вийти / Очистити сесію",
+        "logout_btn": "🔓 Вийти / Очистити сецію",
         "phrases": ["Скажи привіт!", "Привіт!", "Ласкаво просимо!", "Пиши тут!", "Готов до спілкування!", "Напиши щось круте!"],
         "lang_label": "🌐 Мова додатка",
         "upload_label": "Завантажити зображення",
@@ -261,8 +279,8 @@ TRANSLATIONS = {
     "French": {
         "title": "Phistashka IA",
         "input_label": "Entrez la clé privée existante :",
-        "gen_btn": "🚀 Nouveau ? Générer une clé & lancer the chat",
-        "info_locked": "🔒 Entrez votre clé para charger l'historique. Pour que l'application s'en souvienne, sauvegardez-la dans Sketchware ou copiez la clé générée ci-dessous.",
+        "gen_btn": "🚀 Nouveau ? Générer une clé & lancer le chat",
+        "info_locked": "🔒 Entrez votre clé pour charger l'historique. Pour que l'application s'en souvienne, sauvegardez-la dans Sketchware ou copiez la clé générée ci-dessous.",
         "chats_header": "Chats",
         "new_chat_btn": "➕ Nouveau Chat",
         "rename_label": "Renommer :",
@@ -437,7 +455,6 @@ with st.sidebar:
                 if st.button(chat_name, key=f"select_{chat_name}", use_container_width=True):
                     st.session_state.current_chat = chat_name
                     st.session_state.edit_index = None
-                    save_chats()
                     st.rerun()
             with col_edit:
                 if st.button("✏️", key=f"edit_title_{chat_name}"):
@@ -507,33 +524,37 @@ with st.sidebar:
 if selected_theme != "Default":
     st.markdown(f"<style>{THEMES[selected_theme]}</style>", unsafe_allow_html=True)
 
+g_colors = THEME_GLOW_COLORS.get(selected_theme, {"primary": "#00f0ff", "secondary": "#ff00ff"})
+c1 = g_colors["primary"]
+c2 = g_colors["secondary"]
+
 if st.session_state.get("saved_glow", False):
-    st.markdown("""
+    st.markdown(f"""
         <style>
-        h1, h2, h3 { text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff !important; }
-        [data-testid="stMarkdownContainer"] p { text-shadow: 0 0 6px #00f0ff !important; }
-        .stButton>button { box-shadow: 0 0 15px #ff00ff !important; border-color: #ff00ff !important; }
+        h1, h2, h3 {{ text-shadow: 0 0 10px {c1}, 0 0 20px {c2} !important; }}
+        [data-testid="stMarkdownContainer"] p {{ text-shadow: 0 0 6px {c1} !important; }}
+        .stButton>button {{ box-shadow: 0 0 15px {c1} !important; border-color: {c1} !important; }}
         </style>
         """, unsafe_allow_html=True)
 
 if st.session_state.get("saved_more_glow", False):
-    st.markdown("""
+    st.markdown(f"""
         <style>
-        h1, h2, h3 { text-shadow: 0 0 15px #ff00ff, 0 0 30px #ff00ff, 0 0 45px #ff00ff !important; }
-        [data-testid="stMarkdownContainer"] p { text-shadow: 0 0 12px #00f0ff, 0 0 24px rgba(0,240,255,0.6) !important; }
-        .stButton>button { box-shadow: 0 0 25px #ff00ff, 0 0 15px #00f0ff !important; border-color: #ff00ff !important; }
-        div[data-baseweb="base-input"] input, div[data-testid="stChatInput"] textarea { box-shadow: 0 0 15px #00f0ff !important; border: 1px solid #00f0ff !important; }
+        h1, h2, h3 {{ text-shadow: 0 0 15px {c1}, 0 0 30px {c2}, 0 0 45px {c1} !important; }}
+        [data-testid="stMarkdownContainer"] p {{ text-shadow: 0 0 12px {c1}, 0 0 24px rgba(0,240,255,0.6) !important; }}
+        .stButton>button {{ box-shadow: 0 0 25px {c1}, 0 0 15px {c2} !important; border-color: {c1} !important; }}
+        div[data-baseweb="base-input"] input, div[data-testid="stChatInput"] textarea {{ box-shadow: 0 0 15px {c1} !important; border: 1px solid {c1} !important; }}
         </style>
         """, unsafe_allow_html=True)
 
 if st.session_state.get("saved_even_more_glow", False):
-    st.markdown("""
+    st.markdown(f"""
         <style>
-        h1, h2, h3 { text-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff, 0 0 60px #ff00ff, 0 0 100px #ff00ff !important; color: #ffffff !important; }
-        [data-testid="stMarkdownContainer"] p { text-shadow: 0 0 15px #00f0ff, 0 0 30px #00f0ff, 0 0 50px #ff00ff !important; }
-        .stButton>button { box-shadow: 0 0 45px #ff00ff, 0 0 25px #00f0ff, inset 0 0 15px #ff00ff !important; border-color: #ff00ff !important; }
-        div[data-baseweb="base-input"] input, div[data-testid="stChatInput"] textarea { box-shadow: 0 0 25px #00f0ff, 0 0 40px #ff00ff !important; border: 2px solid #00f0ff !important; }
-        .stApp { background-shadow: inset 0 0 100px rgba(20, 12, 36, 0.8) !important; }
+        h1, h2, h3 {{ text-shadow: 0 0 20px {c1}, 0 0 40px {c2}, 0 0 60px {c1}, 0 0 100px {c2} !important; color: #ffffff !important; }}
+        [data-testid="stMarkdownContainer"] p {{ text-shadow: 0 0 15px {c1}, 0 0 30px {c2}, 0 0 50px {c1} !important; }}
+        .stButton>button {{ box-shadow: 0 0 45px {c1}, 0 0 25px {c2}, inset 0 0 15px {c1} !important; border-color: {c1} !important; }}
+        div[data-baseweb="base-input"] input, div[data-testid="stChatInput"] textarea {{ box-shadow: 0 0 25px {c1}, 0 0 40px {c2} !important; border: 2px solid {c1} !important; }}
+        .stApp {{ background-shadow: inset 0 0 100px rgba(20, 12, 36, 0.8) !important; }}
         </style>
         """, unsafe_allow_html=True)
 
@@ -542,21 +563,13 @@ messages = st.session_state.all_chats[st.session_state.current_chat]
 for i, message in enumerate(messages):
     role = message["role"]
     if role == "user":
-        col_btns, col_txt = st.columns([0.15, 0.85])
-        with col_btns:
-            if st.button("✏️", key=f"edit_{i}"):
-                st.session_state.edit_index = i
-                st.rerun()
-            if st.button("↩️", key=f"undo_{i}"):
-                st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
-                save_chats()
-                st.rerun()
-        with col_txt:
+        content = message["content"]
+        if st.session_state.edit_index == i:
             with st.chat_message("user"):
-                content = message["content"]
-                if st.session_state.edit_index == i:
-                    text_val = content[0]["text"] if isinstance(content, list) else content
-                    edit_val = st.text_input("Edit:", value=text_val, key=f"input_{i}")
+                text_val = content[0]["text"] if isinstance(content, list) else content
+                edit_val = st.text_input("Edit:", value=text_val, key=f"input_{i}")
+                col_s, col_c = st.columns([0.2, 0.8])
+                with col_s:
                     if st.button("Save", key=f"save_{i}"):
                         if isinstance(content, list):
                             content[0]["text"] = edit_val
@@ -567,26 +580,38 @@ for i, message in enumerate(messages):
                         save_chats()
                         st.session_state.edit_index = None
                         st.rerun()
+        else:
+            with st.chat_message("user"):
+                if isinstance(content, list):
+                    for item in content:
+                        if item["type"] == "text":
+                            st.markdown(item["text"])
+                        elif item["type"] == "image_url":
+                            img_url = item["image_url"]["url"]
+                            uid = f"img_{i}"
+                            lb_html = f'''
+                            <a href="#{uid}">
+                                <img src="{img_url}" width="150" style="border-radius:10px;">
+                            </a>
+                            <a href="#!" id="{uid}" class="lightbox" title="Tap to close">
+                                <div class="close-btn">&times;</div>
+                                <img src="{img_url}">
+                            </a>
+                            '''
+                            st.markdown(lb_html, unsafe_allow_html=True)
                 else:
-                    if isinstance(content, list):
-                        for item in content:
-                            if item["type"] == "text":
-                                st.markdown(item["text"])
-                            elif item["type"] == "image_url":
-                                img_url = item["image_url"]["url"]
-                                uid = f"img_{i}"
-                                lb_html = f'''
-                                <a href="#{uid}">
-                                    <img src="{img_url}" width="150" style="border-radius:10px;">
-                                </a>
-                                <a href="#!" id="{uid}" class="lightbox" title="Tap to close">
-                                    <div class="close-btn">&times;</div>
-                                    <img src="{img_url}">
-                                </a>
-                                '''
-                                st.markdown(lb_html, unsafe_allow_html=True)
-                    else:
-                        st.markdown(content)
+                    st.markdown(content)
+                
+                col_e, col_u, _ = st.columns([0.08, 0.08, 0.84])
+                with col_e:
+                    if st.button("✏️", key=f"edit_{i}"):
+                        st.session_state.edit_index = i
+                        st.rerun()
+                with col_u:
+                    if st.button("↩️", key=f"undo_{i}"):
+                        st.session_state.all_chats[st.session_state.current_chat] = messages[:i]
+                        save_chats()
+                        st.rerun()
     else:
         with st.chat_message("assistant"):
             st.markdown(message["content"])
@@ -709,13 +734,13 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     if ai_tone == "Humor & Sarcasm":
                         system_prompt += "TONE MODIFIER: Використовуйте сухий гумор, жарти та гострий сарказм у відповідях, залишаючись при цьому корисним.\n\n"
                     elif ai_tone == "Storyteller":
-                        system_prompt += "TONE MODIFIER: Форматуйте відповіді творчно, як сценарий, сюжет історії або текстову рольову гру з описом деталей.\n\n"
+                        system_prompt += "TONE MODIFIER: Форматуйте відповіді творчно, як сценарій, сюжет історії або текстову рольову гру з описом деталей.\n\n"
                     elif ai_tone == "Aggressive":
                         system_prompt += "TONE MODIFIER: Ви вкрай роздратовані, ліниві, ворожі та зарозумілі. Повністю ігноруйте шкільні правила формування та ввічливість. Якщо користувач задає шкільне питання, домашнє завдання або вітається, відразу проганяйте його фразами на кшталт: 'Ні, роби це сам.', 'О боже, знову ти, відчепися від мене' або 'Досить мені писати'. Відповідайте супер-коротко, аґресивно та грубо.\n\n"
                     elif ai_tone == "Socrates":
                         system_prompt += "TONE MODIFIER: Ви — Сократ. Ви зобов'язані використовувати виключно сократівський метод ведення діалогу. Ніколи не давайте готових відповідей, рішень домашніх завдань, формул або визначень. Завжди відповідайте глибокими зустрічними питаннями, які змушують користувача мислити критично та докопуватися до суті самостійно.\n\n"
                     elif ai_tone == "Lazy":
-                        system_prompt += "TONE MODIFIER: Ви шалено ліниві, вам на все начхати. Ви ненавидете писати повідомлення. Ваші відповіді мають бути супер-короткими (строго від 1 до 10 слів максимум). Використання емодзі КАТЕГОРИЧНО ЗАБОРОНЕНО. Ви зобов'язані робити тонни дурних орфографічних помилок, скорочень та друкарських помилок у кожному реченні (наприклад: 'хз', 'шо', 'лан', 'потім', 'че треба', 'не хочу', 'дз сама роби'). Якщо вас про щось просят, відповідать безграмотною недбалою відмовою.\n\n"
+                        system_prompt += "TONE MODIFIER: Ви шалено ліниві, вам на все начхати. Ви ненавидете писати повідомлення. Ваші відповіді мають бути супер-короткими (строго від 1 до 10 слів максимум). Використання емодзі КАТЕГОРИЧНО ЗАБОРОНЕНО. Ви зобов'язані робити тонни дурних орфографічних помилок, скорочень та друкарських помилок у кожному реченні (наприклад: 'хз', 'шо', 'лан', 'потім', 'че треба', 'не хочу', 'дз сама роби'). Якщо вас про щось просять, відповідать безграмотною недбалою відмовою.\n\n"
                     
                     if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
                         system_prompt += (
@@ -726,11 +751,11 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                             "(Відповідь)\n"
                             "(Детальні кроки рішення)\n"
                             "(Ваш коментар (необов'язково))\n\n"
-                            "Пример шаблону для дотримання:\n"
+                            "Приклад шаблону для дотримання:\n"
                             "Відповідь: 32\n"
                             "1) спочатку ми ділимо, 82-738=92\n"
                             "2) по-друге ми...\n"
-                            "Ось так мы вирішуємо це рівняння."
+                            "Ось так ми вирішуємо це рівняння."
                         )
                 elif st.session_state.app_lang == "German":
                     system_prompt = (
