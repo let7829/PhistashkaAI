@@ -39,8 +39,8 @@ THEMES = {
         .stApp, [data-testid="stAppViewContainer"] { background-color: #000c14 !important; color: #00f0ff !important; }
         [data-testid="stSidebar"] { background-color: #001625 !important; border-right: 1px solid #00f0ff !important; }
         h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #00f0ff !important; text-shadow: 0 0 4px #00f0ff; }
-        div.stButton > button { background-color: #001625 !important; color: #00f0ff !important; border: 1px solid #00f0ff !important; box-shadow: 0 0 5px #00f0ff; transition: transform 0.1s ease; will-change: transform, box-shadow; transform: translateZ(0); }
-        div.stButton > button:hover { transform: scale(1.02) translateZ(0); }
+        div.stButton > button { background-color: #001625 !important; color: #00f0ff !important; border: 1px solid #00f0ff !important; box-shadow: 0 0 5px #00f0ff; transition: transform 0.1s ease; }
+        div.stButton > button:hover { transform: scale(1.02); }
     """,
     "Dark Blue": """
         .stApp, [data-testid="stAppViewContainer"] { background-color: #0d1117 !important; color: #c9d1d9 !important; }
@@ -66,8 +66,7 @@ THEMES = {
         .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #00ffcc !important; }
         [data-testid="stSidebar"] { background-color: #1a001a !important; border-right: 1px solid #ff007f !important; }
         h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #ff007f !important; text-shadow: 0 0 4px #ff007f; }
-        div.stButton > button { background-color: #1a001a !important; color: #ff007f !important; border: 1px solid #ff007f !important; box-shadow: 0 0 5px #ff007f; transition: transform 0.1s ease; will-change: transform, box-shadow; transform: translateZ(0); }
-        div.stButton > button:hover { transform: scale(1.02) translateZ(0); }
+        div.stButton > button { background-color: #1a001a !important; color: #ff007f !important; border: 1px solid #ff007f !important; box-shadow: 0 0 5px #ff007f; }
     """,
     "Matrix": """
         .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #00ff00 !important; font-family: 'Courier New', monospace !important; }
@@ -98,17 +97,6 @@ THEMES = {
         .stApp, [data-testid="stAppViewContainer"] { background-color: #031b24 !important; color: #e0f2fe !important; }
         [data-testid="stSidebar"] { background-color: #04293a !important; }
         h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #38bdf8 !important; }
-    """,
-    "Synthwave": """
-        .stApp, [data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #2b00ff, #ff007f) !important; color: #00ffff !important; }
-        [data-testid="stSidebar"] { background-color: #1a0033 !important; border-right: 2px solid #00ffff !important; }
-        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #ff007f !important; text-shadow: 2px 2px #000; }
-        div.stButton > button { background-color: #1a0033 !important; color: #00ffff !important; border: 1px solid #00ffff !important; }
-    """,
-    "Blood Moon": """
-        .stApp, [data-testid="stAppViewContainer"] { background-color: #050000 !important; color: #ff3333 !important; }
-        [data-testid="stSidebar"] { background-color: #1a0000 !important; border-right: 1px solid #ff0000 !important; }
-        h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #ff0000 !important; }
     """,
 }
 
@@ -244,44 +232,6 @@ TRANSLATIONS = {
         "lang_label": "🌐 Język aplikacji",
         "upload_label": "Prześlij zdjęcia",
         "lang_caption": "🌐 Zmień język"
-    },
-    "Spanish": {
-        "title": "Phistashka IA",
-        "input_label": "Ingrese la Clave Privada Existente:",
-        "gen_btn": "🚀 ¿Nuevo Usuario? Generar Clave y Chatear",
-        "info_locked": "🔒 Ingrese su clave para cargar el historial.",
-        "chats_header": "Chats",
-        "new_chat_btn": "➕ Nuevo Chat",
-        "rename_label": "Renombrar:",
-        "ai_header": "🎨 Configuración de IA",
-        "tone_label": "Elige un Tono:",
-        "theme_label": "🎨 Tema de la App",
-        "session_header": "🔑 Info de Sesión",
-        "active_key": "Clave Activa:",
-        "logout_btn": "🔓 Cerrar Sesión / Borrar",
-        "phrases": ["¡Di hola!", "¡Bienvenido!", "¡Escribe algo genial!"],
-        "lang_label": "🌐 Idioma de la App",
-        "upload_label": "Subir imágenes",
-        "lang_caption": "🌐 Cambiar idioma"
-    },
-    "French": {
-        "title": "Phistashka IA",
-        "input_label": "Entrez la Clé Privée Existante:",
-        "gen_btn": "🚀 Nouvel Utilisateur? Générer la Clé & Discuter",
-        "info_locked": "🔒 Entrez votre clé pour charger l'historique.",
-        "chats_header": "Discussions",
-        "new_chat_btn": "➕ Nouvelle Discussion",
-        "rename_label": "Renommer:",
-        "ai_header": "🎨 Configuration de l'IA",
-        "tone_label": "Choisissez un Ton:",
-        "theme_label": "🎨 Thème de l'App",
-        "session_header": "🔑 Info de Session",
-        "active_key": "Clé Active:",
-        "logout_btn": "🔓 Déconnexion / Effacer",
-        "phrases": ["Dites bonjour!", "Bienvenue!", "Écrivez quelque chose de cool!"],
-        "lang_label": "🌐 Langue de l'App",
-        "upload_label": "Télécharger des images",
-        "lang_caption": "🌐 Changer de langue"
     }
 }
 
@@ -309,8 +259,8 @@ if not device_key:
     st.caption(text["lang_caption"])
     st.selectbox(
         "Choose Language / Язык / Мова / Sprache / Język",
-        ["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"],
-        index=["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"].index(st.session_state.app_lang),
+        ["English", "Russian", "Ukrainian", "German", "Polish"],
+        index=["English", "Russian", "Ukrainian", "German", "Polish"].index(st.session_state.app_lang),
         key="lang_selector",
         on_change=on_lang_change
     )
@@ -360,14 +310,14 @@ st.title(text["title"])
 with st.sidebar:
     st.selectbox(
         text["lang_label"], 
-        ["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"], 
-        index=["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"].index(st.session_state.app_lang),
+        ["English", "Russian", "Ukrainian", "German", "Polish"], 
+        index=["English", "Russian", "Ukrainian", "German", "Polish"].index(st.session_state.app_lang),
         key="lang_selector",
         on_change=on_lang_change
     )
     st.header(text["chats_header"])
     if st.button(text["new_chat_btn"]):
-        default_prefix = "Chat" if st.session_state.app_lang in ["English", "German", "Polish", "Spanish", "French"] else "Чат"
+        default_prefix = "Chat" if st.session_state.app_lang in ["English", "German", "Polish"] else "Чат"
         new_name = f"{default_prefix} {len(st.session_state.all_chats) + 1}"
         st.session_state.all_chats[new_name] = []
         st.session_state.current_chat = new_name
@@ -411,7 +361,7 @@ with st.sidebar:
                 if st.button("🗑", key=f"del_{chat_name}"):
                     del st.session_state.all_chats[chat_name]
                     if not st.session_state.all_chats:
-                        default_prefix = "Chat 1" if st.session_state.app_lang in ["English", "German", "Polish", "Spanish", "French"] else "Чат 1"
+                        default_prefix = "Chat 1" if st.session_state.app_lang in ["English", "German", "Polish"] else "Чат 1"
                         st.session_state.all_chats = {default_prefix: []}
                     if st.session_state.current_chat == chat_name or st.session_state.current_chat not in st.session_state.all_chats:
                         st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
@@ -421,7 +371,7 @@ with st.sidebar:
     st.divider()
     st.header(text["ai_header"])
     
-    ai_tone = st.selectbox(text["tone_label"], ["Normal", "Humor & Sarcasm", "Storyteller", "Aggressive", "Socrates", "Lazy", "Gamer Pro", "Hyper Nerd", "Pirate", "UwU", "Shakespeare"])
+    ai_tone = st.selectbox(text["tone_label"], ["Normal", "Humor & Sarcasm", "Storyteller", "Aggressive", "Socrates", "Lazy", "Gamer Pro", "Hyper Nerd", "Pirate"])
     
     st.write(f"### {text['theme_label']}")
     selected_theme = st.radio("", list(THEMES.keys()), index=0)
@@ -559,10 +509,6 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     system_prompt += "TONE MODIFIER: Speak like an over-caffeinated, overly complex software engineer/scientist. Use unnecessarily large words, mention algorithmic complex variables, CPU clocks, memory allocations, and reference high-level math theories.\n\n"
                 elif ai_tone == "Pirate":
                     system_prompt += "TONE MODIFIER: Ahoy! Talk like a legendary seafaring pirate captain. Use words like 'Ahoy', 'Matey', 'Scallywag', 'Landlubber', and 'Shiver me timbers'.\n\n"
-                elif ai_tone == "UwU":
-                    system_prompt += "TONE MODIFIER: Speak like an anime catgirl. Use 'UwU', 'OwO', st-stutter sometimes, and be overwhelmingly cute and shy.\n\n"
-                elif ai_tone == "Shakespeare":
-                    system_prompt += "TONE MODIFIER: Speak in Early Modern English like William Shakespeare. Use 'thee', 'thou', 'doth', and poetic phrasing.\n\n"
                 
                 if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
                     system_prompt += (
