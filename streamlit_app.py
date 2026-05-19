@@ -336,7 +336,16 @@ if "current_device_key" not in st.session_state or st.session_state.current_devi
     if os.path.exists(file_name):
         try:
             with open(file_name, "r", encoding="utf-8") as f:
-                st.session_state.all_chats = json.load(f)
+                raw = json.load(f)
+            for chat, msgs in raw.items():
+                cleaned = []
+                for m in msgs:
+                    if isinstance(m, dict) and "role" in m and "content" in m:
+                        cleaned.append(m)
+                    elif isinstance(m, str):
+                        cleaned.append({"role": "user", "content": m})
+                raw[chat] = cleaned
+            st.session_state.all_chats = raw
         except:
             st.session_state.all_chats = {"Chat 1": []}
     else:
@@ -440,6 +449,8 @@ if selected_theme != "Default":
 messages = st.session_state.all_chats[st.session_state.current_chat]
 
 for i, message in enumerate(messages):
+    if not isinstance(message, dict):
+        continue
     role = message["role"]
     if role == "user":
         col_btns, col_txt = st.columns([0.15, 0.85])
@@ -512,7 +523,7 @@ if prompt := st.chat_input(st.session_state.placeholder_text):
     save_chats()
     st.rerun()
 
-if messages and messages[-1]["role"] == "user" and st.session_state.edit_index is None:
+if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == "user" and st.session_state.edit_index is None):
     with st.chat_message("assistant"):
         try:
             last_msg_content = messages[-1]["content"]
@@ -578,6 +589,8 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
             api_messages = [{"role": "system", "content": system_prompt}]
             
             for msg in messages[:-1]:
+                if not isinstance(msg, dict):
+                    continue
                 m_c = msg["content"]
                 if model == "llama-3.3-70b-versatile" and isinstance(m_c, list):
                     m_c = next((item["text"] for item in m_c if item["type"] == "text"), "")
