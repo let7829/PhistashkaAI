@@ -261,7 +261,7 @@ TRANSLATIONS = {
     "French": {
         "title": "Phistashka IA",
         "input_label": "Entrez la clé privée existante :",
-        "gen_btn": "🚀 Nouveau ? Générer une clé & lancer le chat",
+        "gen_btn": "🚀 Nouveau ? Générer une clé & lancer the chat",
         "info_locked": "🔒 Entrez votre clé para charger l'historique. Pour que l'application s'en souvienne, sauvegardez-la dans Sketchware ou copiez la clé générée ci-dessous.",
         "chats_header": "Chats",
         "new_chat_btn": "➕ Nouveau Chat",
@@ -473,7 +473,6 @@ with st.sidebar:
     selected_theme = st.radio("", list(THEMES.keys()), index=current_theme_idx)
     st.session_state.selected_theme = selected_theme
     
-    # New checkboxes requested placed right below theme selection
     more_glow = st.checkbox("More glow", value=st.session_state.get("saved_more_glow", False))
     st.session_state.selected_more_glow = more_glow
 
@@ -511,27 +510,30 @@ if selected_theme != "Default":
 if st.session_state.get("saved_glow", False):
     st.markdown("""
         <style>
-        h1, h2, h3 { text-shadow: 0 0 8px currentColor, 0 0 15px currentColor !important; }
-        [data-testid="stMarkdownContainer"] p { text-shadow: 0 0 4px currentColor !important; }
-        .stButton>button { box-shadow: 0 0 10px currentColor !important; border-color: currentColor !important; }
+        h1, h2, h3 { text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff !important; }
+        [data-testid="stMarkdownContainer"] p { text-shadow: 0 0 6px #00f0ff !important; }
+        .stButton>button { box-shadow: 0 0 15px #ff00ff !important; border-color: #ff00ff !important; }
         </style>
         """, unsafe_allow_html=True)
 
-# CSS styling overrides for the new custom glow checkboxes
 if st.session_state.get("saved_more_glow", False):
     st.markdown("""
         <style>
-        .stApp { text-shadow: 0 0 8px #ff007f !important; }
-        .stButton>button { box-shadow: 0 0 20px #ff007f, 0 0 10px #00ffff !important; }
+        h1, h2, h3 { text-shadow: 0 0 15px #ff00ff, 0 0 30px #ff00ff, 0 0 45px #ff00ff !important; }
+        [data-testid="stMarkdownContainer"] p { text-shadow: 0 0 12px #00f0ff, 0 0 24px rgba(0,240,255,0.6) !important; }
+        .stButton>button { box-shadow: 0 0 25px #ff00ff, 0 0 15px #00f0ff !important; border-color: #ff00ff !important; }
+        div[data-baseweb="base-input"] input, div[data-testid="stChatInput"] textarea { box-shadow: 0 0 15px #00f0ff !important; border: 1px solid #00f0ff !important; }
         </style>
         """, unsafe_allow_html=True)
 
 if st.session_state.get("saved_even_more_glow", False):
     st.markdown("""
         <style>
-        .stApp { text-shadow: 0 0 15px #ff007f, 0 0 5px #00ffff !important; }
-        .stButton>button { box-shadow: 0 0 35px #ff007f, 0 0 25px #00ffff !important; }
-        input, textarea { box-shadow: 0 0 15px #00ffff !important; }
+        h1, h2, h3 { text-shadow: 0 0 20px #ff00ff, 0 0 40px #ff00ff, 0 0 60px #ff00ff, 0 0 100px #ff00ff !important; color: #ffffff !important; }
+        [data-testid="stMarkdownContainer"] p { text-shadow: 0 0 15px #00f0ff, 0 0 30px #00f0ff, 0 0 50px #ff00ff !important; }
+        .stButton>button { box-shadow: 0 0 45px #ff00ff, 0 0 25px #00f0ff, inset 0 0 15px #ff00ff !important; border-color: #ff00ff !important; }
+        div[data-baseweb="base-input"] input, div[data-testid="stChatInput"] textarea { box-shadow: 0 0 25px #00f0ff, 0 0 40px #ff00ff !important; border: 2px solid #00f0ff !important; }
+        .stApp { background-shadow: inset 0 0 100px rgba(20, 12, 36, 0.8) !important; }
         </style>
         """, unsafe_allow_html=True)
 
@@ -713,7 +715,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     elif ai_tone == "Socrates":
                         system_prompt += "TONE MODIFIER: Ви — Сократ. Ви зобов'язані використовувати виключно сократівський метод ведення діалогу. Ніколи не давайте готових відповідей, рішень домашніх завдань, формул або визначень. Завжди відповідайте глибокими зустрічними питаннями, які змушують користувача мислити критично та докопуватися до суті самостійно.\n\n"
                     elif ai_tone == "Lazy":
-                        system_prompt += "TONE MODIFIER: Ви шалено ліниві, вам на все начхати. Ви ненавидите писати повідомлення. Ваші відповіді мають бути супер-короткими (строго від 1 до 10 слів максимум). Використання емодзі КАТЕГОРИЧНО ЗАБОРОНЕНО. Ви зобов'язані робити тонни дурних орфографічних помилок, скорочень та друкарських помилок у кожному реченні (наприклад: 'хз', 'шо', 'лан', 'потім', 'че треба', 'не хочу', 'дз сама роби'). Якщо вас про щось просят, відповідать безграмотною недбалою відмовою.\n\n"
+                        system_prompt += "TONE MODIFIER: Ви шалено ліниві, вам на все начхати. Ви ненавидете писати повідомлення. Ваші відповіді мають бути супер-короткими (строго від 1 до 10 слів максимум). Використання емодзі КАТЕГОРИЧНО ЗАБОРОНЕНО. Ви зобов'язані робити тонни дурних орфографічних помилок, скорочень та друкарських помилок у кожному реченні (наприклад: 'хз', 'шо', 'лан', 'потім', 'че треба', 'не хочу', 'дз сама роби'). Якщо вас про щось просят, відповідать безграмотною недбалою відмовою.\n\n"
                     
                     if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
                         system_prompt += (
@@ -766,7 +768,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     system_prompt = (
                         "You are Phistashka AI, a friendly, vibrant, and polite conversational AI assistant.\n"
                         "LANGUAGE RULE: You must strictly reply in Spanish at all times. Do not write in any other language.\n"
-                        "EMOJI RULE: You must use between 1 and 4 emojis total per response (3 is recommended). Keep them contextually relevant.\n\n"
+                        "EMOJI RULE: You must use between 1 and 4 Emojis total per response (3 is recommended). Keep them contextually relevant.\n\n"
                     )
                     if ai_tone == "Humor & Sarcasm":
                         system_prompt += "TONE MODIFIER: Usa humor ingenioso, chistes y un toque de sarcasmo en tus respuestas.\n\n"
@@ -798,7 +800,7 @@ if messages and messages[-1]["role"] == "user" and st.session_state.edit_index i
                     system_prompt = (
                         "You are Phistashka AI, a friendly, vibrant, and polite conversational AI assistant.\n"
                         "LANGUAGE RULE: You must strictly reply in French at all times. Do not write in any other language.\n"
-                        "EMOJI RULE: You must use between 1 and 4 emojis total per response (3 is recommended). Keep them contextually relevant.\n\n"
+                        "EMOJI RULE: You must use between 1 and 4 Emojis total per response (3 is recommended). Keep them contextually relevant.\n\n"
                     )
                     if ai_tone == "Humor & Sarcasm":
                         system_prompt += "TONE MODIFIER: Utilisez de l'humour cynique, des blagues et du sarcasme subtil dans vos réponses.\n\n"
