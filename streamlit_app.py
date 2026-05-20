@@ -7,7 +7,23 @@ from datetime import datetime
 import json
 import os
 
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+def get_groq_client():
+    if "active_key_index" not in st.session_state:
+        st.session_state.active_key_index = 1
+    
+    key_to_use = st.secrets[f"GROQ_API_KEY_{st.session_state.active_key_index}"]
+    return Groq(api_key=key_to_use)
+
+def switch_api_key():
+    if st.session_state.active_key_index == 1:
+        st.session_state.active_key_index = 2
+    else:
+        st.session_state.active_key_index = 1
+
+if "active_key_index" not in st.session_state:
+    st.session_state.active_key_index = 1
+
+client = get_groq_client()
 
 st.set_page_config(page_title="Phistashka AI")
 
@@ -438,6 +454,10 @@ with st.sidebar:
     st.divider()
     st.header(text["session_header"])
     st.success(f"{text['active_key']} {device_key}")
+    st.info(f"Using API Key #{st.session_state.active_key_index}")
+    if st.button("🔄 Switch API Key"):
+        switch_api_key()
+        st.rerun()
     if st.button(text["logout_btn"]):
         st.query_params.clear()
         st.session_state.native_key = None
@@ -610,6 +630,22 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                 st.rerun()
         except Exception as e:
             if "429" in str(e):
-                st.error("⏳ Phistashka AI is resting! The daily rate limit was reached. Please try again in a few minutes.")
+                if st.session_state.active_key_index == 1 and "GROQ_API_KEY_2" in st.secrets:
+                    switch_api_key()
+                    st.warning("Rate limit reached on Key 1. Switched to Key 2. Please try again.")
+                elif st.session_state.active_key_index == 2 and "GROQ_API_KEY_1" in st.secrets:
+                    switch_api_key()
+                    st.warning("Rate limit reached on Key 2. Switched to Key 1. Please try again.")
+                else:
+                    st.error("⏳ Phistashka AI is resting! All API keys have reached their daily rate limit. Please try again later.")
+            elif "401" in str(e):
+                if st.session_state.active_key_index == 1 and "GROQ_API_KEY_2" in st.secrets:
+                    switch_api_key()
+                    st.warning("Key 1 invalid. Switched to Key 2. Please try again.")
+                elif st.session_state.active_key_index == 2 and "GROQ_API_KEY_1" in st.secrets:
+                    switch_api_key()
+                    st.warning("Key 2 invalid. Switched to Key 1. Please try again.")
+                else:
+                    st.error("Error: Invalid API Key. Please check your API keys in Streamlit secrets.")
             else:
                 st.error(f"Error: {e}")
