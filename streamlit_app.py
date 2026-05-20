@@ -10,14 +10,13 @@ import os
 def get_groq_client():
     if "active_key_index" not in st.session_state:
         st.session_state.active_key_index = 1
-    
-    key_to_use = st.secrets[f"GROQ_API_KEY_{st.session_state.active_key_index}"]
-    return Groq(api_key=key_to_use)
+    key_name = f"GROQ_API_KEY_{st.session_state.active_key_index}"
+    return Groq(api_key=st.secrets[key_name])
 
 def switch_api_key():
-    if st.session_state.active_key_index == 1:
+    if "GROQ_API_KEY_2" in st.secrets and st.session_state.active_key_index == 1:
         st.session_state.active_key_index = 2
-    else:
+    elif "GROQ_API_KEY_1" in st.secrets and st.session_state.active_key_index == 2:
         st.session_state.active_key_index = 1
 
 if "active_key_index" not in st.session_state:
@@ -455,7 +454,7 @@ with st.sidebar:
     st.header(text["session_header"])
     st.success(f"{text['active_key']} {device_key}")
     st.info(f"Using API Key #{st.session_state.active_key_index}")
-    if st.button("🔄 Switch API Key"):
+    if st.button("🔄 Switch API Key (Manual)"):
         switch_api_key()
         st.rerun()
     if st.button(text["logout_btn"]):
@@ -531,6 +530,7 @@ if uploaded_file:
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(text["phrases"])
+    st.session_state.api_switch_attempts = 0
     if uploaded_file:
         base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
         msg_content = [
@@ -546,6 +546,7 @@ if prompt := st.chat_input(st.session_state.placeholder_text):
 if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == "user" and st.session_state.edit_index is None):
     with st.chat_message("assistant"):
         try:
+            client = get_groq_client()
             last_msg_content = messages[-1]["content"]
             current_is_image = isinstance(last_msg_content, list)
             model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.3-70b-versatile"
@@ -629,23 +630,18 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                 save_chats()
                 st.rerun()
         except Exception as e:
-            if "429" in str(e):
-                if st.session_state.active_key_index == 1 and "GROQ_API_KEY_2" in st.secrets:
+            if "429" in str(e) or "401" in str(e):
+                if "api_switch_attempts" not in st.session_state:
+                    st.session_state.api_switch_attempts = 0
+                if st.session_state.api_switch_attempts < 1 and (
+                    ("GROQ_API_KEY_2" in st.secrets and st.session_state.active_key_index == 1) or
+                    ("GROQ_API_KEY_1" in st.secrets and st.session_state.active_key_index == 2)
+                ):
+                    st.session_state.api_switch_attempts += 1
                     switch_api_key()
-                    st.warning("Rate limit reached on Key 1. Switched to Key 2. Please try again.")
-                elif st.session_state.active_key_index == 2 and "GROQ_API_KEY_1" in st.secrets:
-                    switch_api_key()
-                    st.warning("Rate limit reached on Key 2. Switched to Key 1. Please try again.")
+                    st.warning("API key issue detected. Automatically switched to backup key. Retrying...")
+                    st.rerun()
                 else:
-                    st.error("⏳ Phistashka AI is resting! All API keys have reached their daily rate limit. Please try again later.")
-            elif "401" in str(e):
-                if st.session_state.active_key_index == 1 and "GROQ_API_KEY_2" in st.secrets:
-                    switch_api_key()
-                    st.warning("Key 1 invalid. Switched to Key 2. Please try again.")
-                elif st.session_state.active_key_index == 2 and "GROQ_API_KEY_1" in st.secrets:
-                    switch_api_key()
-                    st.warning("Key 2 invalid. Switched to Key 1. Please try again.")
-                else:
-                    st.error("Error: Invalid API Key. Please check your API keys in Streamlit secrets.")
+                    st.error("⏳ All API keys are exhausted or invalid. Please try again later.")
             else:
                 st.error(f"Error: {e}")
