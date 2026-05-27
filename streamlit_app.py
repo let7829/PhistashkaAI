@@ -3,9 +3,10 @@ import streamlit.components.v1 as components
 from groq import Groq
 import base64
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
+import time
 
 def get_groq_client():
     if "active_key_index" not in st.session_state:
@@ -22,6 +23,30 @@ def switch_api_key():
 if "active_key_index" not in st.session_state:
     st.session_state.active_key_index = 1
 
+def init_token_tracking():
+    if "key_usage" not in st.session_state:
+        st.session_state.key_usage = {}
+    today = datetime.now().date()
+    for idx in [1, 2]:
+        if idx not in st.session_state.key_usage:
+            st.session_state.key_usage[idx] = {"tokens_today": 0, "last_reset": today}
+        else:
+            if st.session_state.key_usage[idx]["last_reset"] != today:
+                st.session_state.key_usage[idx]["tokens_today"] = 0
+                st.session_state.key_usage[idx]["last_reset"] = today
+
+def get_daily_limit_for_model(model):
+    if "llama-4-scout" in model:
+        return 500_000
+    else:
+        return 100_000
+
+def get_time_until_reset():
+    now = datetime.utcnow()
+    midnight = datetime(now.year, now.month, now.day, 0, 0, 0) + timedelta(days=1)
+    return midnight - now
+
+init_token_tracking()
 client = get_groq_client()
 
 st.set_page_config(page_title="Phistashka AI")
@@ -454,6 +479,22 @@ with st.sidebar:
     st.header(text["session_header"])
     st.success(f"{text['active_key']} {device_key}")
     st.info(f"Using API Key #{st.session_state.active_key_index}")
+    
+    st.write("---")
+    st.write("**📊 Token Usage (Today)**")
+    current_key = st.session_state.active_key_index
+    usage = st.session_state.key_usage.get(current_key, {"tokens_today": 0})
+    limit_display = 100_000
+    if "current_model_limit" in st.session_state:
+        limit_display = st.session_state.current_model_limit
+    st.write(f"Key {current_key}: `{usage['tokens_today']:,}` tokens")
+    percent = min(1.0, usage['tokens_today'] / limit_display)
+    st.progress(percent)
+    time_left = get_time_until_reset()
+    hours = time_left.seconds // 3600
+    minutes = (time_left.seconds % 3600) // 60
+    st.caption(f"↻ Resets in {hours}h {minutes}m")
+    
     if st.button("🔄 Switch API Key (Manual)"):
         switch_api_key()
         st.rerun()
@@ -520,6 +561,9 @@ for i, message in enumerate(messages):
     else:
         with st.chat_message("assistant"):
             st.markdown(message["content"])
+            if "meta" in message:
+                meta = message["meta"]
+                st.caption(f"⏱️ {meta['response_time']:.2f}s  |  🕒 {meta['timestamp']}  |  ⚡ {meta['tokens_per_sec']:.1f} tok/s  |  🔢 {meta['total_tokens']} tokens")
 
 if "placeholder_text" not in st.session_state:
     st.session_state.placeholder_text = random.choice(text["phrases"])
@@ -550,6 +594,9 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
             last_msg_content = messages[-1]["content"]
             current_is_image = isinstance(last_msg_content, list)
             model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.3-70b-versatile"
+            
+            daily_limit = get_daily_limit_for_model(model)
+            st.session_state.current_model_limit = daily_limit
             
             if current_is_image:
                 user_text = next((item["text"] for item in last_msg_content if item["type"] == "text"), "")
@@ -622,26 +669,67 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                 m_content = f"[User previously attached an image] {text_part}"
             api_messages.append({"role": last_m["role"], "content": m_content})
             
+            start_time = time.time()
             completion = client.chat.completions.create(model=model, messages=api_messages)
+            end_time = time.time()
             response_text = completion.choices[0].message.content
-            if response_text:
-                st.markdown(response_text)
-                st.session_state.all_chats[st.session_state.current_chat].append({"role": "assistant", "content": response_text})
-                save_chats()
-                st.rerun()
+            
+            usage = completion.usage
+            total_tokens = usage.total_tokens if usage else 0
+            prompt_tokens = usage.prompt_tokens if usage else 0
+            completion_tokens = usage.completion_tokens if usage else 0
+            
+            current_key = st.session_state.active_key_index
+            init_token_tracking()
+            st.session_state.key_usage[current_key]["tokens_today"] += total_tokens
+            
+            elapsed = end_time - start_time
+            tokens_per_sec = total_tokens / elapsed if elapsed > 0 else 0
+            timestamp_str = datetime.now().strftime("%H:%M:%S")
+            
+            st.markdown(response_text)
+            st.caption(f"⏱️ {elapsed:.2f}s  |  🕒 {timestamp_str}  |  ⚡ {tokens_per_sec:.1f} tok/s  |  🔢 {total_tokens} tokens")
+            
+            st.session_state.all_chats[st.session_state.current_chat].append({
+                "role": "assistant",
+                "content": response_text,
+                "meta": {
+                    "response_time": elapsed,
+                    "timestamp": timestamp_str,
+                    "tokens_per_sec": tokens_per_sec,
+                    "total_tokens": total_tokens,
+                    "prompt_tokens": prompt_tokens,
+                    "completion_tokens": completion_tokens
+                }
+            })
+            save_chats()
+            st.rerun()
+            
         except Exception as e:
-            if "429" in str(e) or "401" in str(e):
+            error_msg = str(e)
+            if "429" in error_msg or "401" in error_msg:
+                current_key = st.session_state.active_key_index
+                usage_info = st.session_state.key_usage.get(current_key, {"tokens_today": 0})
+                limit_val = get_daily_limit_for_model(model) if 'model' in locals() else 100_000
+                remaining_tokens = max(0, limit_val - usage_info['tokens_today'])
+                time_left = get_time_until_reset()
+                hours = time_left.seconds // 3600
+                minutes = (time_left.seconds % 3600) // 60
+                st.error(
+                    f"🚫 **Rate limit reached**\n\n"
+                    f"- Key #{current_key} used `{usage_info['tokens_today']:,}` / {limit_val:,} tokens today\n"
+                    f"- Remaining tokens: {remaining_tokens:,}\n"
+                    f"- Time until reset: {hours}h {minutes}m\n\n"
+                    f"Trying backup key..."
+                )
                 if "api_switch_attempts" not in st.session_state:
                     st.session_state.api_switch_attempts = 0
-                if st.session_state.api_switch_attempts < 1 and (
-                    ("GROQ_API_KEY_2" in st.secrets and st.session_state.active_key_index == 1) or
-                    ("GROQ_API_KEY_1" in st.secrets and st.session_state.active_key_index == 2)
-                ):
+                if st.session_state.api_switch_attempts < 1:
                     st.session_state.api_switch_attempts += 1
                     switch_api_key()
-                    st.warning("API key issue detected. Automatically switched to backup key. Retrying...")
+                    time.sleep(1)
                     st.rerun()
                 else:
-                    st.error("⏳ All API keys are exhausted or invalid. Please try again later.")
+                    st.error("❌ Both API keys exhausted. Please try again later or add more keys.")
             else:
-                st.error(f"Error: {e}")
+                st.error(f"Error: {error_msg}")
