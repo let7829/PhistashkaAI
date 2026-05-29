@@ -568,13 +568,60 @@ for i, message in enumerate(messages):
 if "placeholder_text" not in st.session_state:
     st.session_state.placeholder_text = random.choice(text["phrases"])
 
-uploaded_file = st.file_uploader(text["upload_label"], type=["image"], label_visibility="collapsed")
-if uploaded_file:
-    st.image(uploaded_file, width=150)
+col1, col2, col3 = st.columns(3)
+with col1:
+    if st.button("🖼 Image", use_container_width=True):
+        st.session_state.show_image_picker = True
+        st.session_state.show_camera = False
+with col2:
+    if st.button("📂 File", use_container_width=True):
+        st.session_state.show_image_picker = True
+        st.session_state.show_camera = False
+with col3:
+    if st.button("📷 Camera", use_container_width=True):
+        st.session_state.show_camera = True
+        st.session_state.show_image_picker = False
+
+if "show_image_picker" not in st.session_state:
+    st.session_state.show_image_picker = False
+if "show_camera" not in st.session_state:
+    st.session_state.show_camera = False
+if "auto_sent_camera" not in st.session_state:
+    st.session_state.auto_sent_camera = False
+
+uploaded_file = None
+camera_image = None
+
+if st.session_state.show_image_picker:
+    uploaded_file = st.file_uploader("", type=["image"], label_visibility="collapsed")
+    if uploaded_file:
+        st.image(uploaded_file, width=150)
+
+if st.session_state.show_camera:
+    camera_image = st.camera_input("", label_visibility="collapsed")
+    if camera_image and not st.session_state.auto_sent_camera:
+        st.session_state.auto_sent_camera = True
+        base64_image = base64.b64encode(camera_image.getvalue()).decode("utf-8")
+        msg_content = [
+            {"type": "text", "text": "What's in this image? (auto-captured)"},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+        ]
+        st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+        save_chats()
+        st.rerun()
+    elif camera_image:
+        st.image(camera_image, width=150)
+
+if uploaded_file and not camera_image:
+    st.session_state.uploaded_file_data = uploaded_file
+else:
+    st.session_state.uploaded_file_data = None
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(text["phrases"])
     st.session_state.api_switch_attempts = 0
+    
+    uploaded_file = st.session_state.uploaded_file_data if st.session_state.get("uploaded_file_data") else None
     if uploaded_file:
         base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
         msg_content = [
@@ -583,6 +630,7 @@ if prompt := st.chat_input(st.session_state.placeholder_text):
         ]
     else:
         msg_content = prompt
+    
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
     save_chats()
     st.rerun()
