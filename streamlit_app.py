@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 import json
 import os
 import time
+from PIL import Image
+import io
 
 def get_groq_client():
     if "active_key_index" not in st.session_state:
@@ -191,19 +193,16 @@ st.markdown("""
         gap: 10px;
         margin-bottom: 5px;
     }
-    .custom-image-buttons button {
-        flex: 1;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        border: 2px solid #1e3a8a;
+    div.stButton > button:first-child {
         background-color: #e5e7eb;
-        cursor: pointer;
-        font-size: 1rem;
-        min-width: 140px;
+        border: 2px solid #1e3a8a;
+        border-radius: 0.5rem;
+        color: black;
         height: 50px;
+        min-width: 140px;
         transition: 0.2s;
     }
-    .custom-image-buttons button:hover {
+    div.stButton > button:first-child:hover {
         background-color: #d1d5db;
     }
     .image-caption {
@@ -232,7 +231,9 @@ TRANSLATIONS = {
         "phrases": ["Say hello!", "Say hi!", "Welcome!", "Type here!", "Ready to chat!", "Write something cool!"],
         "lang_label": "🌐 App Language",
         "upload_label": "Upload images",
-        "lang_caption": "🌐 Change language"
+        "lang_caption": "🌐 Change language",
+        "photo_btn": "🖼️ Photo",
+        "camera_btn": "📷 Camera"
     },
     "Russian": {
         "title": "Фисташка ИИ",
@@ -251,7 +252,9 @@ TRANSLATIONS = {
         "phrases": ["Скажи привет!", "Привет!", "Добро пожаловать!", "Пиши тут!", "Готов к общению!", "Напиши что-то крутое!"],
         "lang_label": "🌐 Язык приложения",
         "upload_label": "Загрузить изображения",
-        "lang_caption": "🌐 Поменять язык"
+        "lang_caption": "🌐 Поменять язык",
+        "photo_btn": "🖼️ Фото",
+        "camera_btn": "📷 Камера"
     },
     "Ukrainian": {
         "title": "Фісташка ШІ",
@@ -270,7 +273,9 @@ TRANSLATIONS = {
         "phrases": ["Скажи привіт!", "Привіт!", "Ласкаво просимо!", "Пиши тут!", "Готовий до спілкування!", "Напиши щось круте!"],
         "lang_label": "🌐 Мова додатка",
         "upload_label": "Завантажити зображення",
-        "lang_caption": "🌐 Змінити мову"
+        "lang_caption": "🌐 Змінити мову",
+        "photo_btn": "🖼️ Фото",
+        "camera_btn": "📷 Камера"
     },
     "German": {
         "title": "Phistashka KI",
@@ -289,7 +294,9 @@ TRANSLATIONS = {
         "phrases": ["Say Hallo!", "Willkommen!", "Schreib etwas Cooles!"],
         "lang_label": "🌐 App-Sprache",
         "upload_label": "Bilder hochladen",
-        "lang_caption": "🌐 Sprache ändern"
+        "lang_caption": "🌐 Sprache ändern",
+        "photo_btn": "🖼️ Foto",
+        "camera_btn": "📷 Kamera"
     },
     "Polish": {
         "title": "Phistashka AI",
@@ -308,7 +315,9 @@ TRANSLATIONS = {
         "phrases": ["Przywitaj się!", "Witamy!", "Napisz coś fajnego!"],
         "lang_label": "🌐 Język aplikacji",
         "upload_label": "Prześlij zdjęcia",
-        "lang_caption": "🌐 Zmień język"
+        "lang_caption": "🌐 Zmień język",
+        "photo_btn": "🖼️ Zdjęcie",
+        "camera_btn": "📷 Aparat"
     },
     "Spanish": {
         "title": "Phistashka IA",
@@ -327,7 +336,9 @@ TRANSLATIONS = {
         "phrases": ["¡Di hola!", "¡Bienvenido!", "¡Escribe algo genial!"],
         "lang_label": "🌐 Idioma de la App",
         "upload_label": "Subir imágenes",
-        "lang_caption": "🌐 Cambiar idioma"
+        "lang_caption": "🌐 Cambiar idioma",
+        "photo_btn": "🖼️ Foto",
+        "camera_btn": "📷 Cámara"
     },
     "French": {
         "title": "Phistashka IA",
@@ -346,7 +357,9 @@ TRANSLATIONS = {
         "phrases": ["Dites bonjour!", "Bienvenue!", "Écrivez quelque chose de cool!"],
         "lang_label": "🌐 Langue de l'App",
         "upload_label": "Télécharger des images",
-        "lang_caption": "🌐 Changer de langue"
+        "lang_caption": "🌐 Changer de langue",
+        "photo_btn": "🖼️ Photo",
+        "camera_btn": "📷 Caméra"
     }
 }
 
@@ -592,173 +605,42 @@ for i, message in enumerate(messages):
 
 if "placeholder_text" not in st.session_state:
     st.session_state.placeholder_text = random.choice(text["phrases"])
+    
+if "captured_image_base64" not in st.session_state:
+    st.session_state.captured_image_base64 = None
 
-if "captured_image" not in st.session_state:
-    st.session_state.captured_image = None
+col1, col2 = st.columns(2)
+with col1:
+    photo_file = st.file_uploader(text["photo_btn"], type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    if photo_file:
+        img = Image.open(photo_file)
+        buffered = io.BytesIO()
+        img.save(buffered, format="JPEG")
+        st.session_state.captured_image_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        st.rerun()
+with col2:
+    camera_image = st.camera_input(text["camera_btn"], label_visibility="collapsed")
+    if camera_image:
+        img = Image.open(camera_image)
+        buffered = io.BytesIO()
+        img.save(buffered, format="JPEG")
+        st.session_state.captured_image_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
+        st.rerun()
+st.caption("200MB per file")
 
-custom_html = """
-<div class="custom-image-buttons">
-    <button id="photoBtn">🖼️ Photo</button>
-    <button id="cameraBtn">📷 Camera</button>
-</div>
-<div class="image-caption">200MB per file</div>
-
-<script>
-(function() {
-    const photoBtn = document.getElementById('photoBtn');
-    const cameraBtn = document.getElementById('cameraBtn');
-
-    function sendImageToStreamlit(base64Data) {
-        const data = {type: "image", data: base64Data};
-        const event = new CustomEvent("streamlit:setComponentValue", {
-            detail: {value: data}
-        });
-        window.dispatchEvent(event);
-    }
-
-    if (photoBtn) {
-        photoBtn.addEventListener('click', function() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                if (file && file.size <= 200 * 1024 * 1024) {
-                    const reader = new FileReader();
-                    reader.onload = function(ev) {
-                        const base64 = ev.target.result.split(',')[1];
-                        sendImageToStreamlit(base64);
-                    };
-                    reader.readAsDataURL(file);
-                } else if (file) {
-                    alert("File exceeds 200MB limit.");
-                }
-            };
-            input.click();
-        });
-    }
-
-    if (cameraBtn) {
-        cameraBtn.addEventListener('click', function() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert("Camera not supported on this device.");
-                return;
-            }
-
-            const modal = document.createElement('div');
-            modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.width = '100%';
-            modal.style.height = '100%';
-            modal.style.backgroundColor = 'rgba(0,0,0,0.9)';
-            modal.style.zIndex = '10000';
-            modal.style.display = 'flex';
-            modal.style.flexDirection = 'column';
-            modal.style.justifyContent = 'center';
-            modal.style.alignItems = 'center';
-
-            const video = document.createElement('video');
-            video.autoplay = true;
-            video.playsInline = true;
-            video.style.maxWidth = '90%';
-            video.style.maxHeight = '60%';
-            video.style.borderRadius = '12px';
-            video.style.backgroundColor = '#000';
-
-            const captureBtn = document.createElement('button');
-            captureBtn.innerText = '📸 Capture';
-            captureBtn.style.margin = '20px';
-            captureBtn.style.padding = '12px 24px';
-            captureBtn.style.fontSize = '18px';
-            captureBtn.style.borderRadius = '30px';
-            captureBtn.style.border = 'none';
-            captureBtn.style.backgroundColor = '#1e3a8a';
-            captureBtn.style.color = 'white';
-            captureBtn.style.cursor = 'pointer';
-
-            const closeBtn = document.createElement('button');
-            closeBtn.innerText = '✖ Close';
-            closeBtn.style.padding = '10px 20px';
-            closeBtn.style.fontSize = '16px';
-            closeBtn.style.borderRadius = '30px';
-            closeBtn.style.border = '1px solid #ccc';
-            closeBtn.style.backgroundColor = '#333';
-            closeBtn.style.color = 'white';
-            closeBtn.style.cursor = 'pointer';
-
-            modal.appendChild(video);
-            modal.appendChild(captureBtn);
-            modal.appendChild(closeBtn);
-            document.body.appendChild(modal);
-
-            let stream = null;
-
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(function(mediaStream) {
-                    stream = mediaStream;
-                    video.srcObject = stream;
-                })
-                .catch(function(err) {
-                    alert("Could not access camera: " + err.message);
-                    document.body.removeChild(modal);
-                });
-
-            captureBtn.onclick = function() {
-                if (!video.videoWidth || !video.videoHeight) {
-                    alert("Camera not ready yet.");
-                    return;
-                }
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
-                sendImageToStreamlit(base64);
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                }
-                document.body.removeChild(modal);
-            };
-
-            closeBtn.onclick = function() {
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                }
-                document.body.removeChild(modal);
-            };
-        });
-    }
-})();
-</script>
-"""
-
-image_data = st.components.v1.html(custom_html, height=80)
-
-if image_data:
-    if isinstance(image_data, dict) and image_data.get("type") == "image":
-        st.session_state.captured_image = image_data["data"]
-
-if st.session_state.captured_image:
-    uploaded_file = type('obj', (object,), {'getvalue': lambda: base64.b64decode(st.session_state.captured_image)})()
-    st.image(base64.b64decode(st.session_state.captured_image), width=150)
+if st.session_state.captured_image_base64:
+    st.image(base64.b64decode(st.session_state.captured_image_base64), width=150)
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(text["phrases"])
     st.session_state.api_switch_attempts = 0
-    if st.session_state.captured_image:
-        base64_image = st.session_state.captured_image
+    if st.session_state.captured_image_base64:
+        base64_image = st.session_state.captured_image_base64
         msg_content = [
             {"type": "text", "text": prompt},
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
         ]
-        st.session_state.captured_image = None
-    elif 'uploaded_file' in locals() and uploaded_file:
-        base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
-        msg_content = [
-            {"type": "text", "text": prompt},
-            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-        ]
+        st.session_state.captured_image_base64 = None
     else:
         msg_content = prompt
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
