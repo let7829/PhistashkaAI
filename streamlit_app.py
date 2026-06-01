@@ -596,7 +596,7 @@ if "placeholder_text" not in st.session_state:
 if "captured_image" not in st.session_state:
     st.session_state.captured_image = None
 
-# --- UPDATED HTML/JS WITH ANDROID INTENT FOR CAMERA ---
+# --- REPLACED CAMERA SCRIPT WITH SIMPLE CAPTURE ATTRIBUTE ---
 custom_html = """
 <div class="custom-image-buttons">
     <button id="photoBtn">🖼️ Photo</button>
@@ -641,38 +641,25 @@ custom_html = """
 
     if (cameraBtn) {
         cameraBtn.addEventListener('click', function() {
-            // Check if the user is on an Android device
-            const userAgent = navigator.userAgent.toLowerCase();
-            const isAndroid = userAgent.indexOf('android') > -1;
-
-            // Define the intent URI for Google Camera
-            const intentUri = 'intent://#Intent;package=com.google.android.GoogleCamera;action=android.media.action.IMAGE_CAPTURE;end';
-
-            if (isAndroid) {
-                // On Android, attempt to launch the camera app via intent
-                window.location.href = intentUri;
-                // Show instructions to return after photo is taken
-                alert('After taking the photo, you will need to return to this browser tab.');
-            } else {
-                // For non-Android devices, fall back to a standard file picker
-                const input = document.createElement('input');
-                input.type = 'file';
-                input.accept = 'image/*';
-                input.onchange = function(e) {
-                    const file = e.target.files[0];
-                    if (file && file.size <= 200 * 1024 * 1024) {
-                        const reader = new FileReader();
-                        reader.onload = function(ev) {
-                            const base64 = ev.target.result.split(',')[1];
-                            sendImageToStreamlit(base64);
-                        };
-                        reader.readAsDataURL(file);
-                    } else if (file) {
-                        alert("File exceeds 200MB limit.");
-                    }
-                };
-                input.click();
-            }
+            const input = document.createElement('input');
+            // 'capture' attribute opens the default camera app directly
+            input.setAttribute('capture', 'environment');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file && file.size <= 200 * 1024 * 1024) {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        const base64 = ev.target.result.split(',')[1];
+                        sendImageToStreamlit(base64);
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file) {
+                    alert("File exceeds 200MB limit.");
+                }
+            };
+            input.click();
         });
     }
 })();
