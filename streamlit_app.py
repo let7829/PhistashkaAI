@@ -7,8 +7,6 @@ from datetime import datetime, timedelta
 import json
 import os
 import time
-from PIL import Image
-import io
 
 def get_groq_client():
     if "active_key_index" not in st.session_state:
@@ -188,27 +186,35 @@ st.markdown("""
         text-decoration: none;
         font-weight: bold;
     }
-    .custom-image-buttons {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 5px;
+    div[data-testid="stFileUploader"] > div:first-child {
+        background: transparent !important;
     }
-    div.stButton > button:first-child {
-        background-color: #e5e7eb;
-        border: 2px solid #1e3a8a;
-        border-radius: 0.5rem;
-        color: black;
-        height: 50px;
-        min-width: 140px;
-        transition: 0.2s;
+    div[data-testid="stFileUploader"] > div:first-child button {
+        background-color: #e5e7eb !important;
+        border: 2px solid #1e3a8a !important;
+        border-radius: 0.5rem !important;
+        min-width: 140px !important;
+        height: 50px !important;
+        color: black !important;
+        font-size: 1rem !important;
     }
-    div.stButton > button:first-child:hover {
-        background-color: #d1d5db;
+    button[kind="secondary"] {
+        background-color: #e5e7eb !important;
+        border: 2px solid #1e3a8a !important;
+        border-radius: 0.5rem !important;
+        min-width: 140px !important;
+        height: 50px !important;
+        color: black !important;
+        font-size: 1rem !important;
     }
-    .image-caption {
-        font-size: 0.8rem;
-        color: #666;
-        margin-top: 0;
+    .stCameraInput button {
+        background-color: #e5e7eb !important;
+        border: 2px solid #1e3a8a !important;
+        border-radius: 0.5rem !important;
+        min-width: 140px !important;
+        height: 50px !important;
+        color: black !important;
+        font-size: 1rem !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -231,9 +237,7 @@ TRANSLATIONS = {
         "phrases": ["Say hello!", "Say hi!", "Welcome!", "Type here!", "Ready to chat!", "Write something cool!"],
         "lang_label": "🌐 App Language",
         "upload_label": "Upload images",
-        "lang_caption": "🌐 Change language",
-        "photo_btn": "🖼️ Photo",
-        "camera_btn": "📷 Camera"
+        "lang_caption": "🌐 Change language"
     },
     "Russian": {
         "title": "Фисташка ИИ",
@@ -252,9 +256,7 @@ TRANSLATIONS = {
         "phrases": ["Скажи привет!", "Привет!", "Добро пожаловать!", "Пиши тут!", "Готов к общению!", "Напиши что-то крутое!"],
         "lang_label": "🌐 Язык приложения",
         "upload_label": "Загрузить изображения",
-        "lang_caption": "🌐 Поменять язык",
-        "photo_btn": "🖼️ Фото",
-        "camera_btn": "📷 Камера"
+        "lang_caption": "🌐 Поменять язык"
     },
     "Ukrainian": {
         "title": "Фісташка ШІ",
@@ -273,9 +275,7 @@ TRANSLATIONS = {
         "phrases": ["Скажи привіт!", "Привіт!", "Ласкаво просимо!", "Пиши тут!", "Готовий до спілкування!", "Напиши щось круте!"],
         "lang_label": "🌐 Мова додатка",
         "upload_label": "Завантажити зображення",
-        "lang_caption": "🌐 Змінити мову",
-        "photo_btn": "🖼️ Фото",
-        "camera_btn": "📷 Камера"
+        "lang_caption": "🌐 Змінити мову"
     },
     "German": {
         "title": "Phistashka KI",
@@ -294,9 +294,7 @@ TRANSLATIONS = {
         "phrases": ["Say Hallo!", "Willkommen!", "Schreib etwas Cooles!"],
         "lang_label": "🌐 App-Sprache",
         "upload_label": "Bilder hochladen",
-        "lang_caption": "🌐 Sprache ändern",
-        "photo_btn": "🖼️ Foto",
-        "camera_btn": "📷 Kamera"
+        "lang_caption": "🌐 Sprache ändern"
     },
     "Polish": {
         "title": "Phistashka AI",
@@ -315,9 +313,7 @@ TRANSLATIONS = {
         "phrases": ["Przywitaj się!", "Witamy!", "Napisz coś fajnego!"],
         "lang_label": "🌐 Język aplikacji",
         "upload_label": "Prześlij zdjęcia",
-        "lang_caption": "🌐 Zmień język",
-        "photo_btn": "🖼️ Zdjęcie",
-        "camera_btn": "📷 Aparat"
+        "lang_caption": "🌐 Zmień język"
     },
     "Spanish": {
         "title": "Phistashka IA",
@@ -336,9 +332,7 @@ TRANSLATIONS = {
         "phrases": ["¡Di hola!", "¡Bienvenido!", "¡Escribe algo genial!"],
         "lang_label": "🌐 Idioma de la App",
         "upload_label": "Subir imágenes",
-        "lang_caption": "🌐 Cambiar idioma",
-        "photo_btn": "🖼️ Foto",
-        "camera_btn": "📷 Cámara"
+        "lang_caption": "🌐 Cambiar idioma"
     },
     "French": {
         "title": "Phistashka IA",
@@ -357,9 +351,7 @@ TRANSLATIONS = {
         "phrases": ["Dites bonjour!", "Bienvenue!", "Écrivez quelque chose de cool!"],
         "lang_label": "🌐 Langue de l'App",
         "upload_label": "Télécharger des images",
-        "lang_caption": "🌐 Changer de langue",
-        "photo_btn": "🖼️ Photo",
-        "camera_btn": "📷 Caméra"
+        "lang_caption": "🌐 Changer de langue"
     }
 }
 
@@ -605,42 +597,33 @@ for i, message in enumerate(messages):
 
 if "placeholder_text" not in st.session_state:
     st.session_state.placeholder_text = random.choice(text["phrases"])
-    
-if "captured_image_base64" not in st.session_state:
-    st.session_state.captured_image_base64 = None
+
+if "captured_image" not in st.session_state:
+    st.session_state.captured_image = None
 
 col1, col2 = st.columns(2)
 with col1:
-    photo_file = st.file_uploader(text["photo_btn"], type=["jpg", "jpeg", "png"], label_visibility="collapsed")
-    if photo_file:
-        img = Image.open(photo_file)
-        buffered = io.BytesIO()
-        img.save(buffered, format="JPEG")
-        st.session_state.captured_image_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
-        st.rerun()
+    camera_image = st.camera_input("📷 Camera", label_visibility="collapsed")
+    if camera_image is not None:
+        st.session_state.captured_image = camera_image.getvalue()
+        st.image(camera_image, width=150)
 with col2:
-    camera_image = st.camera_input(text["camera_btn"], label_visibility="collapsed")
-    if camera_image:
-        img = Image.open(camera_image)
-        buffered = io.BytesIO()
-        img.save(buffered, format="JPEG")
-        st.session_state.captured_image_base64 = base64.b64encode(buffered.getvalue()).decode("utf-8")
-        st.rerun()
+    uploaded_photo = st.file_uploader("🖼️ Photo", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    if uploaded_photo is not None:
+        st.session_state.captured_image = uploaded_photo.getvalue()
+        st.image(uploaded_photo, width=150)
 st.caption("200MB per file")
-
-if st.session_state.captured_image_base64:
-    st.image(base64.b64decode(st.session_state.captured_image_base64), width=150)
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(text["phrases"])
     st.session_state.api_switch_attempts = 0
-    if st.session_state.captured_image_base64:
-        base64_image = st.session_state.captured_image_base64
+    if st.session_state.captured_image:
+        base64_image = base64.b64encode(st.session_state.captured_image).decode("utf-8")
         msg_content = [
             {"type": "text", "text": prompt},
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
         ]
-        st.session_state.captured_image_base64 = None
+        st.session_state.captured_image = None
     else:
         msg_content = prompt
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
