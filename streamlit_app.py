@@ -186,35 +186,30 @@ st.markdown("""
         text-decoration: none;
         font-weight: bold;
     }
-    div[data-testid="stFileUploader"] > div:first-child {
-        background: transparent !important;
+    .custom-image-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 5px;
     }
-    div[data-testid="stFileUploader"] > div:first-child button {
-        background-color: #e5e7eb !important;
-        border: 2px solid #1e3a8a !important;
-        border-radius: 0.5rem !important;
-        min-width: 140px !important;
-        height: 50px !important;
-        color: black !important;
-        font-size: 1rem !important;
+    .custom-image-buttons button {
+        flex: 1;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        border: 2px solid #1e3a8a;
+        background-color: #e5e7eb;
+        cursor: pointer;
+        font-size: 1rem;
+        min-width: 140px;
+        height: 50px;
+        transition: 0.2s;
     }
-    button[kind="secondary"] {
-        background-color: #e5e7eb !important;
-        border: 2px solid #1e3a8a !important;
-        border-radius: 0.5rem !important;
-        min-width: 140px !important;
-        height: 50px !important;
-        color: black !important;
-        font-size: 1rem !important;
+    .custom-image-buttons button:hover {
+        background-color: #d1d5db;
     }
-    .stCameraInput button {
-        background-color: #e5e7eb !important;
-        border: 2px solid #1e3a8a !important;
-        border-radius: 0.5rem !important;
-        min-width: 140px !important;
-        height: 50px !important;
-        color: black !important;
-        font-size: 1rem !important;
+    .image-caption {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 0;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -601,29 +596,169 @@ if "placeholder_text" not in st.session_state:
 if "captured_image" not in st.session_state:
     st.session_state.captured_image = None
 
-col1, col2 = st.columns(2)
-with col1:
-    camera_image = st.camera_input("📷 Camera", label_visibility="collapsed")
-    if camera_image is not None:
-        st.session_state.captured_image = camera_image.getvalue()
-        st.image(camera_image, width=150)
-with col2:
-    uploaded_photo = st.file_uploader("🖼️ Photo", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
-    if uploaded_photo is not None:
-        st.session_state.captured_image = uploaded_photo.getvalue()
-        st.image(uploaded_photo, width=150)
-st.caption("200MB per file")
+custom_html = """
+<div class="custom-image-buttons">
+    <button id="photoBtn">🖼️ Photo</button>
+    <button id="cameraBtn">📷 Camera</button>
+</div>
+<div class="image-caption">200MB per file</div>
+
+<script>
+(function() {
+    const photoBtn = document.getElementById('photoBtn');
+    const cameraBtn = document.getElementById('cameraBtn');
+
+    function sendImageToStreamlit(base64Data) {
+        const data = {type: "image", data: base64Data};
+        const event = new CustomEvent("streamlit:setComponentValue", {
+            detail: {value: data}
+        });
+        window.dispatchEvent(event);
+    }
+
+    if (photoBtn) {
+        photoBtn.addEventListener('click', function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file && file.size <= 200 * 1024 * 1024) {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        const base64 = ev.target.result.split(',')[1];
+                        sendImageToStreamlit(base64);
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file) {
+                    alert("File exceeds 200MB limit.");
+                }
+            };
+            input.click();
+        });
+    }
+
+    if (cameraBtn) {
+        cameraBtn.addEventListener('click', function() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert("Camera not supported on this device.");
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.9)';
+            modal.style.zIndex = '10000';
+            modal.style.display = 'flex';
+            modal.style.flexDirection = 'column';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+
+            const video = document.createElement('video');
+            video.autoplay = true;
+            video.playsInline = true;
+            video.style.maxWidth = '90%';
+            video.style.maxHeight = '60%';
+            video.style.borderRadius = '12px';
+            video.style.backgroundColor = '#000';
+
+            const captureBtn = document.createElement('button');
+            captureBtn.innerText = '📸 Capture';
+            captureBtn.style.margin = '20px';
+            captureBtn.style.padding = '12px 24px';
+            captureBtn.style.fontSize = '18px';
+            captureBtn.style.borderRadius = '30px';
+            captureBtn.style.border = 'none';
+            captureBtn.style.backgroundColor = '#1e3a8a';
+            captureBtn.style.color = 'white';
+            captureBtn.style.cursor = 'pointer';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.innerText = '✖ Close';
+            closeBtn.style.padding = '10px 20px';
+            closeBtn.style.fontSize = '16px';
+            closeBtn.style.borderRadius = '30px';
+            closeBtn.style.border = '1px solid #ccc';
+            closeBtn.style.backgroundColor = '#333';
+            closeBtn.style.color = 'white';
+            closeBtn.style.cursor = 'pointer';
+
+            modal.appendChild(video);
+            modal.appendChild(captureBtn);
+            modal.appendChild(closeBtn);
+            document.body.appendChild(modal);
+
+            let stream = null;
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(function(mediaStream) {
+                    stream = mediaStream;
+                    video.srcObject = stream;
+                })
+                .catch(function(err) {
+                    alert("Could not access camera: " + err.message);
+                    document.body.removeChild(modal);
+                });
+
+            captureBtn.onclick = function() {
+                if (!video.videoWidth || !video.videoHeight) {
+                    alert("Camera not ready yet.");
+                    return;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
+                sendImageToStreamlit(base64);
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                document.body.removeChild(modal);
+            };
+
+            closeBtn.onclick = function() {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                document.body.removeChild(modal);
+            };
+        });
+    }
+})();
+</script>
+"""
+
+image_data = st.components.v1.html(custom_html, height=80)
+
+if image_data:
+    if isinstance(image_data, dict) and image_data.get("type") == "image":
+        st.session_state.captured_image = image_data["data"]
+
+if st.session_state.captured_image:
+    uploaded_file = type('obj', (object,), {'getvalue': lambda: base64.b64decode(st.session_state.captured_image)})()
+    st.image(base64.b64decode(st.session_state.captured_image), width=150)
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(text["phrases"])
     st.session_state.api_switch_attempts = 0
     if st.session_state.captured_image:
-        base64_image = base64.b64encode(st.session_state.captured_image).decode("utf-8")
+        base64_image = st.session_state.captured_image
         msg_content = [
             {"type": "text", "text": prompt},
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
         ]
         st.session_state.captured_image = None
+    elif 'uploaded_file' in locals() and uploaded_file:
+        base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
+        msg_content = [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+        ]
     else:
         msg_content = prompt
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
