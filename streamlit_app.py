@@ -186,6 +186,28 @@ st.markdown("""
         text-decoration: none;
         font-weight: bold;
     }
+    .custom-image-buttons {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 5px;
+    }
+    .custom-image-buttons button {
+        flex: 1;
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        border: 1px solid #ccc;
+        background-color: #f0f2f6;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+    .custom-image-buttons button:hover {
+        background-color: #e0e2e6;
+    }
+    .image-caption {
+        font-size: 0.8rem;
+        color: #666;
+        margin-top: 0;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -568,14 +590,144 @@ for i, message in enumerate(messages):
 if "placeholder_text" not in st.session_state:
     st.session_state.placeholder_text = random.choice(text["phrases"])
 
-uploaded_file = st.file_uploader(text["upload_label"], type=["image"], label_visibility="collapsed")
-if uploaded_file:
-    st.image(uploaded_file, width=150)
+if "captured_image" not in st.session_state:
+    st.session_state.captured_image = None
+
+custom_html = """
+<div class="custom-image-buttons">
+    <button id="photoBtn">🖼️ Photo</button>
+    <button id="cameraBtn">📷 Camera</button>
+</div>
+<div class="image-caption">200MB per file</div>
+
+<script>
+(function() {
+    const photoBtn = document.getElementById('photoBtn');
+    const cameraBtn = document.getElementById('cameraBtn');
+
+    function sendImageToStreamlit(base64Data) {
+        const data = {type: "image", data: base64Data};
+        const event = new CustomEvent("streamlit:setComponentValue", {
+            detail: {value: data}
+        });
+        window.dispatchEvent(event);
+    }
+
+    if (photoBtn) {
+        photoBtn.addEventListener('click', function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file && file.size <= 200 * 1024 * 1024) {
+                    const reader = new FileReader();
+                    reader.onload = function(ev) {
+                        const base64 = ev.target.result.split(',')[1];
+                        sendImageToStreamlit(base64);
+                    };
+                    reader.readAsDataURL(file);
+                } else if (file) {
+                    alert("File exceeds 200MB limit.");
+                }
+            };
+            input.click();
+        });
+    }
+
+    if (cameraBtn) {
+        cameraBtn.addEventListener('click', function() {
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                const video = document.createElement('video');
+                const canvas = document.createElement('canvas');
+                let stream = null;
+                navigator.mediaDevices.getUserMedia({ video: true })
+                    .then(function(mediaStream) {
+                        stream = mediaStream;
+                        video.srcObject = stream;
+                        video.play();
+                        const modal = document.createElement('div');
+                        modal.style.position = 'fixed';
+                        modal.style.top = '0';
+                        modal.style.left = '0';
+                        modal.style.width = '100%';
+                        modal.style.height = '100%';
+                        modal.style.backgroundColor = 'rgba(0,0,0,0.9)';
+                        modal.style.zIndex = '10000';
+                        modal.style.display = 'flex';
+                        modal.style.flexDirection = 'column';
+                        modal.style.justifyContent = 'center';
+                        modal.style.alignItems = 'center';
+                        const videoContainer = document.createElement('div');
+                        videoContainer.style.position = 'relative';
+                        videoContainer.appendChild(video);
+                        const captureBtn = document.createElement('button');
+                        captureBtn.innerText = '📸 Capture';
+                        captureBtn.style.marginTop = '20px';
+                        captureBtn.style.padding = '10px 20px';
+                        captureBtn.style.fontSize = '18px';
+                        const closeBtn = document.createElement('button');
+                        closeBtn.innerText = '✖ Close';
+                        closeBtn.style.marginTop = '10px';
+                        closeBtn.style.padding = '10px 20px';
+                        closeBtn.style.fontSize = '18px';
+                        modal.appendChild(videoContainer);
+                        modal.appendChild(captureBtn);
+                        modal.appendChild(closeBtn);
+                        document.body.appendChild(modal);
+                        video.style.maxWidth = '90%';
+                        video.style.maxHeight = '70%';
+                        captureBtn.onclick = function() {
+                            canvas.width = video.videoWidth;
+                            canvas.height = video.videoHeight;
+                            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                            const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
+                            sendImageToStreamlit(base64);
+                            if (stream) {
+                                stream.getTracks().forEach(track => track.stop());
+                            }
+                            document.body.removeChild(modal);
+                        };
+                        closeBtn.onclick = function() {
+                            if (stream) {
+                                stream.getTracks().forEach(track => track.stop());
+                            }
+                            document.body.removeChild(modal);
+                        };
+                    })
+                    .catch(function(err) {
+                        alert("Could not access camera: " + err.message);
+                    });
+            } else {
+                alert("Camera not supported on this device/browser.");
+            }
+        });
+    }
+})();
+</script>
+"""
+
+image_data = st.components.v1.html(custom_html, height=80)
+
+if image_data:
+    if isinstance(image_data, dict) and image_data.get("type") == "image":
+        st.session_state.captured_image = image_data["data"]
+
+if st.session_state.captured_image:
+    uploaded_file = type('obj', (object,), {'getvalue': lambda: base64.b64decode(st.session_state.captured_image)})()
+    st.image(base64.b64decode(st.session_state.captured_image), width=150)
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(text["phrases"])
     st.session_state.api_switch_attempts = 0
-    if uploaded_file:
+    if st.session_state.captured_image:
+        base64_image = st.session_state.captured_image
+        msg_content = [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+        ]
+        st.session_state.captured_image = None
+    elif 'uploaded_file' in locals() and uploaded_file:
         base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
         msg_content = [
             {"type": "text", "text": prompt},
