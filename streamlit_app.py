@@ -199,7 +199,7 @@ st.markdown("""
         background-color: #e5e7eb;
         cursor: pointer;
         font-size: 1rem;
-        min-width: 120px;
+        min-width: 140px;
         height: 50px;
         transition: 0.2s;
     }
@@ -596,7 +596,6 @@ if "placeholder_text" not in st.session_state:
 if "captured_image" not in st.session_state:
     st.session_state.captured_image = None
 
-# --- REPLACED CAMERA SCRIPT WITH SIMPLE CAPTURE ATTRIBUTE ---
 custom_html = """
 <div class="custom-image-buttons">
     <button id="photoBtn">🖼️ Photo</button>
@@ -641,25 +640,93 @@ custom_html = """
 
     if (cameraBtn) {
         cameraBtn.addEventListener('click', function() {
-            const input = document.createElement('input');
-            // 'capture' attribute opens the default camera app directly
-            input.setAttribute('capture', 'environment');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                if (file && file.size <= 200 * 1024 * 1024) {
-                    const reader = new FileReader();
-                    reader.onload = function(ev) {
-                        const base64 = ev.target.result.split(',')[1];
-                        sendImageToStreamlit(base64);
-                    };
-                    reader.readAsDataURL(file);
-                } else if (file) {
-                    alert("File exceeds 200MB limit.");
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert("Camera not supported on this device.");
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.style.position = 'fixed';
+            modal.style.top = '0';
+            modal.style.left = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.backgroundColor = 'rgba(0,0,0,0.9)';
+            modal.style.zIndex = '10000';
+            modal.style.display = 'flex';
+            modal.style.flexDirection = 'column';
+            modal.style.justifyContent = 'center';
+            modal.style.alignItems = 'center';
+
+            const video = document.createElement('video');
+            video.autoplay = true;
+            video.playsInline = true;
+            video.style.maxWidth = '90%';
+            video.style.maxHeight = '60%';
+            video.style.borderRadius = '12px';
+            video.style.backgroundColor = '#000';
+
+            const captureBtn = document.createElement('button');
+            captureBtn.innerText = '📸 Capture';
+            captureBtn.style.margin = '20px';
+            captureBtn.style.padding = '12px 24px';
+            captureBtn.style.fontSize = '18px';
+            captureBtn.style.borderRadius = '30px';
+            captureBtn.style.border = 'none';
+            captureBtn.style.backgroundColor = '#1e3a8a';
+            captureBtn.style.color = 'white';
+            captureBtn.style.cursor = 'pointer';
+
+            const closeBtn = document.createElement('button');
+            closeBtn.innerText = '✖ Close';
+            closeBtn.style.padding = '10px 20px';
+            closeBtn.style.fontSize = '16px';
+            closeBtn.style.borderRadius = '30px';
+            closeBtn.style.border = '1px solid #ccc';
+            closeBtn.style.backgroundColor = '#333';
+            closeBtn.style.color = 'white';
+            closeBtn.style.cursor = 'pointer';
+
+            modal.appendChild(video);
+            modal.appendChild(captureBtn);
+            modal.appendChild(closeBtn);
+            document.body.appendChild(modal);
+
+            let stream = null;
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(function(mediaStream) {
+                    stream = mediaStream;
+                    video.srcObject = stream;
+                })
+                .catch(function(err) {
+                    alert("Could not access camera: " + err.message);
+                    document.body.removeChild(modal);
+                });
+
+            captureBtn.onclick = function() {
+                if (!video.videoWidth || !video.videoHeight) {
+                    alert("Camera not ready yet.");
+                    return;
                 }
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
+                sendImageToStreamlit(base64);
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                document.body.removeChild(modal);
             };
-            input.click();
+
+            closeBtn.onclick = function() {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                document.body.removeChild(modal);
+            };
         });
     }
 })();
