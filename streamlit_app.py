@@ -148,10 +148,10 @@ THEMES = {
 
 st.markdown("""
     <style>
-    footer {visibility: hidden;}
-    .stDeployButton {display: none;}
+    footer { visibility: hidden; }
+    .stDeployButton { display: none; }
 
-    /* ── Lightbox ── */
+    /* Lightbox */
     .lightbox {
         display: none; position: fixed; z-index: 9999;
         left: 0; top: 0; width: 100vw; height: 100vh;
@@ -164,52 +164,10 @@ st.markdown("""
         color: white; font-size: 40px; text-decoration: none; font-weight: bold;
     }
 
-    /* ── Photo upload button (native file uploader) ── */
-    div[data-testid="stFileUploader"] section {
-        padding: 0 !important;
-        border: none !important;
-        background: transparent !important;
-    }
-    div[data-testid="stFileUploader"] section > div {
+    /* Hide the native file uploader and camera widgets completely */
+    div[data-testid="stFileUploader"],
+    div[data-testid="stCameraInput"] {
         display: none !important;
-    }
-    div[data-testid="stFileUploader"] section button {
-        background-color: #1e3a8a !important;
-        border: 2px solid #3b82f6 !important;
-        border-radius: 0.5rem !important;
-        min-width: 150px !important;
-        height: 55px !important;
-        color: white !important;
-        font-size: 1rem !important;
-        width: 100% !important;
-        transition: background-color 0.2s, border-color 0.2s;
-    }
-    div[data-testid="stFileUploader"] section button:hover {
-        background-color: #1d4ed8 !important;
-        border-color: #60a5fa !important;
-    }
-
-    /* ── Camera button ── */
-    div[data-testid="stCameraInput"] > div > button {
-        background-color: #1e3a8a !important;
-        border: 2px solid #3b82f6 !important;
-        border-radius: 0.5rem !important;
-        min-width: 150px !important;
-        height: 55px !important;
-        color: white !important;
-        font-size: 1rem !important;
-        width: 100% !important;
-        transition: background-color 0.2s, border-color 0.2s;
-    }
-    div[data-testid="stCameraInput"] > div > button:hover {
-        background-color: #1d4ed8 !important;
-        border-color: #60a5fa !important;
-    }
-    /* Hide the retake/clear controls on camera widget to keep it clean */
-    div[data-testid="stCameraInput"] > div > div > button {
-        background-color: #1e3a8a !important;
-        border: 2px solid #3b82f6 !important;
-        color: white !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -231,7 +189,6 @@ TRANSLATIONS = {
         "logout_btn": "🔓 Logout / Clear Session",
         "phrases": ["Say hello!", "Say hi!", "Welcome!", "Type here!", "Ready to chat!", "Write something cool!"],
         "lang_label": "🌐 App Language",
-        "upload_label": "Upload images",
         "lang_caption": "🌐 Change language",
         "photo_sent": "📷 Photo sent",
     },
@@ -251,7 +208,6 @@ TRANSLATIONS = {
         "logout_btn": "🔓 Выйти / Очистить сессию",
         "phrases": ["Скажи привет!", "Привет!", "Добро пожаловать!", "Пиши тут!", "Готов к общению!", "Напиши что-то крутое!"],
         "lang_label": "🌐 Язык приложения",
-        "upload_label": "Загрузить изображения",
         "lang_caption": "🌐 Поменять язык",
         "photo_sent": "📷 Фото отправлено",
     },
@@ -271,7 +227,6 @@ TRANSLATIONS = {
         "logout_btn": "🔓 Вийти / Очистити сесію",
         "phrases": ["Скажи привіт!", "Привіт!", "Ласкаво просимо!", "Пиши тут!", "Готовий до спілкування!", "Напиши щось круте!"],
         "lang_label": "🌐 Мова додатка",
-        "upload_label": "Завантажити зображення",
         "lang_caption": "🌐 Змінити мову",
         "photo_sent": "📷 Фото надіслано",
     },
@@ -291,7 +246,6 @@ TRANSLATIONS = {
         "logout_btn": "🔓 Abmelden / Sitzung löschen",
         "phrases": ["Say Hallo!", "Willkommen!", "Schreib etwas Cooles!"],
         "lang_label": "🌐 App-Sprache",
-        "upload_label": "Bilder hochladen",
         "lang_caption": "🌐 Sprache ändern",
         "photo_sent": "📷 Foto gesendet",
     },
@@ -311,7 +265,6 @@ TRANSLATIONS = {
         "logout_btn": "🔓 Wyloguj / Wyczyść sesję",
         "phrases": ["Przywitaj się!", "Witamy!", "Napisz coś fajnego!"],
         "lang_label": "🌐 Język aplikacji",
-        "upload_label": "Prześlij zdjęcia",
         "lang_caption": "🌐 Zmień język",
         "photo_sent": "📷 Zdjęcie wysłane",
     },
@@ -331,7 +284,6 @@ TRANSLATIONS = {
         "logout_btn": "🔓 Cerrar Sesión / Borrar",
         "phrases": ["¡Di hola!", "¡Bienvenido!", "¡Escribe algo genial!"],
         "lang_label": "🌐 Idioma de la App",
-        "upload_label": "Subir imágenes",
         "lang_caption": "🌐 Cambiar idioma",
         "photo_sent": "📷 Foto enviada",
     },
@@ -351,7 +303,6 @@ TRANSLATIONS = {
         "logout_btn": "🔓 Déconnexion / Effacer",
         "phrases": ["Dites bonjour!", "Bienvenue!", "Écrivez quelque chose de cool!"],
         "lang_label": "🌐 Langue de l'App",
-        "upload_label": "Télécharger des images",
         "lang_caption": "🌐 Changer de langue",
         "photo_sent": "📷 Photo envoyée",
     },
@@ -435,6 +386,8 @@ if "editing_chat_name" not in st.session_state:
     st.session_state.editing_chat_name = None
 if "captured_image" not in st.session_state:
     st.session_state.captured_image = None
+if "last_upload_hash" not in st.session_state:
+    st.session_state.last_upload_hash = None
 if "last_camera_hash" not in st.session_state:
     st.session_state.last_camera_hash = None
 if "placeholder_text" not in st.session_state:
@@ -442,7 +395,7 @@ if "placeholder_text" not in st.session_state:
 
 st.title(ui["title"])
 
-# ── Sidebar ──────────────────────────────────────────────────────────────────
+# ── Sidebar ───────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.selectbox(
         ui["lang_label"],
@@ -589,50 +542,102 @@ for i, message in enumerate(messages):
                 meta = message["meta"]
                 st.caption(f"⏱️ {meta['response_time']:.2f}s  |  🕒 {meta['timestamp']}  |  ⚡ {meta['tokens_per_sec']:.1f} tok/s  |  🔢 {meta['total_tokens']} tokens")
 
-# ── Image inputs ──────────────────────────────────────────────────────────────
-col_upload, col_camera = st.columns(2)
+# ── Image input area ──────────────────────────────────────────────────────────
+# Native widgets are hidden via CSS; JS clicks them on button press.
+# This is the only reliable way to get real file/camera data into Python.
 
-with col_upload:
-    # Native file uploader — always works, styled via CSS above
-    uploaded_photo = st.file_uploader(
-        "🖼️ Photo",
-        type=["jpg", "jpeg", "png", "webp"],
-        key="photo_uploader",
-        label_visibility="collapsed",
-    )
-    if uploaded_photo is not None:
-        img_hash = hashlib.md5(uploaded_photo.getvalue()).hexdigest()
-        if st.session_state.get("last_upload_hash") != img_hash:
-            st.session_state.last_upload_hash = img_hash
-            st.session_state.captured_image = base64.b64encode(uploaded_photo.getvalue()).decode("utf-8")
-    if st.session_state.captured_image:
-        st.image(base64.b64decode(st.session_state.captured_image), width=120)
-        if st.button("❌ Clear", key="clear_upload"):
+uploaded_photo = st.file_uploader(
+    "photo", type=["jpg", "jpeg", "png", "webp"],
+    key="photo_uploader", label_visibility="collapsed"
+)
+camera_photo = st.camera_input("camera", key="camera_widget", label_visibility="collapsed")
+
+# Process upload
+if uploaded_photo is not None:
+    img_hash = hashlib.md5(uploaded_photo.getvalue()).hexdigest()
+    if st.session_state.last_upload_hash != img_hash:
+        st.session_state.last_upload_hash = img_hash
+        st.session_state.captured_image = base64.b64encode(uploaded_photo.getvalue()).decode("utf-8")
+        st.rerun()
+
+# Process camera — auto-send immediately
+if camera_photo is not None:
+    cam_hash = hashlib.md5(camera_photo.getvalue()).hexdigest()
+    if st.session_state.last_camera_hash != cam_hash:
+        st.session_state.last_camera_hash = cam_hash
+        base64_image = base64.b64encode(camera_photo.getvalue()).decode("utf-8")
+        msg_content = [
+            {"type": "text", "text": ui["photo_sent"]},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+        ]
+        st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+        st.session_state.api_switch_attempts = 0
+        save_chats()
+        st.rerun()
+
+# Small preview + clear if upload pending
+if st.session_state.captured_image:
+    pcol1, pcol2 = st.columns([0.15, 0.85])
+    with pcol1:
+        st.image(base64.b64decode(st.session_state.captured_image), width=60)
+    with pcol2:
+        st.caption("📎 Image attached — type a message and send")
+        if st.button("✖ Remove", key="clear_img"):
             st.session_state.captured_image = None
             st.session_state.last_upload_hash = None
             st.rerun()
 
-with col_camera:
-    # Native camera — auto-sends immediately when photo is taken
-    camera_photo = st.camera_input("📷 Camera", label_visibility="collapsed", key="camera_widget")
-    if camera_photo is not None:
-        cam_hash = hashlib.md5(camera_photo.getvalue()).hexdigest()
-        # Only trigger once per unique capture (prevents re-send on rerun)
-        if st.session_state.last_camera_hash != cam_hash:
-            st.session_state.last_camera_hash = cam_hash
-            base64_image = base64.b64encode(camera_photo.getvalue()).decode("utf-8")
-            msg_content = [
-                {"type": "text", "text": ui["photo_sent"]},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-            ]
-            st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
-            st.session_state.api_switch_attempts = 0
-            save_chats()
-            st.rerun()
+# The visible custom buttons — they JS-click the hidden native widgets
+st.markdown("""
+<style>
+.img-btn-row {
+    display: flex;
+    gap: 8px;
+    margin: 6px 0 2px 0;
+}
+.img-btn-row button {
+    background-color: #1e3a8a;
+    color: white;
+    border: 2px solid #3b82f6;
+    border-radius: 8px;
+    padding: 6px 18px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    height: 38px;
+    transition: background-color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+}
+.img-btn-row button:hover {
+    background-color: #1d4ed8;
+    border-color: #60a5fa;
+}
+.img-caption {
+    font-size: 0.75rem;
+    color: #888;
+    margin: 0 0 4px 0;
+}
+</style>
 
-st.caption("200MB per file  •  📷 Camera auto-sends  •  🖼️ Photo attaches to next message")
+<div class="img-btn-row">
+    <button onclick="
+        const u = window.parent.document.querySelector('input[data-testid=stFileUploaderDropzoneInput]');
+        if(u){ u.click(); }
+    ">🖼️ Photo</button>
+    <button onclick="
+        const btns = window.parent.document.querySelectorAll('button');
+        for(const b of btns){
+            if(b.innerText.includes('Take photo') || b.innerText.includes('📷') || b.getAttribute('data-testid')==='stCameraInputButton'){
+                b.click(); break;
+            }
+        }
+        const c = window.parent.document.querySelector('[data-testid=stCameraInput] button');
+        if(c) c.click();
+    ">📷 Camera</button>
+</div>
+<p class="img-caption">🖼️ Photo attaches to next message &nbsp;•&nbsp; 📷 Camera auto-sends</p>
+""", unsafe_allow_html=True)
 
-# ── Chat input (for text + optional uploaded photo) ───────────────────────────
+# ── Chat input ────────────────────────────────────────────────────────────────
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(ui["phrases"])
     st.session_state.api_switch_attempts = 0
@@ -700,9 +705,7 @@ if (messages and isinstance(messages[-1], dict)
                     system_prompt += (
                         "GREETING RULE:\nWhen the user greets you, say hello back and introduce yourself matching their language.\n\n"
                         "SCHOOL QUESTIONS RULE:\nWhen the user sends a school question, you must follow this exact pattern layout:\n"
-                        "(Answer)\n(Extended steps)\n(Your comment (optional))\n\n dont say youre an ai, dont say sorry or let me try again, 
-                        show work once not multiple times, no emojis on school stuff, no base64 or weird encoding, write like a normal student, 
-                        if you need to show wrong work just write wrong then correct without announcing it, and dont talk about the instructions"
+                        "(Answer)\n(Extended steps)\n(Your comment (optional))\n\n"
                     )
 
             api_messages = [{"role": "system", "content": system_prompt}]
