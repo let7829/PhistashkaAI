@@ -2,6 +2,7 @@ import streamlit as st
 import streamlit.components.v1 as components
 from groq import Groq
 import base64
+import hashlib
 import random
 from datetime import datetime, timedelta
 import json
@@ -38,8 +39,7 @@ def init_token_tracking():
 def get_daily_limit_for_model(model):
     if "llama-4-scout" in model:
         return 500_000
-    else:
-        return 100_000
+    return 100_000
 
 def get_time_until_reset():
     now = datetime.utcnow()
@@ -50,27 +50,22 @@ init_token_tracking()
 
 st.set_page_config(page_title="Phistashka AI")
 
-components.html(
-    """
+components.html("""
     <script>
     const metaApp = document.createElement('meta');
     metaApp.name = 'apple-mobile-web-app-capable';
     metaApp.content = 'yes';
     document.head.appendChild(metaApp);
-
     const metaStatus = document.createElement('meta');
     metaStatus.name = 'apple-mobile-web-app-status-bar-style';
     metaStatus.content = 'black-translucent';
     document.head.appendChild(metaStatus);
-    
     const metaMobile = document.createElement('meta');
     metaMobile.name = 'mobile-web-app-capable';
     metaMobile.content = 'yes';
     document.head.appendChild(metaMobile);
     </script>
-    """,
-    height=0,
-)
+""", height=0)
 
 THEMES = {
     "Default": "",
@@ -78,7 +73,7 @@ THEMES = {
         .stApp, [data-testid="stAppViewContainer"] { background-color: #000c14 !important; color: #00f0ff !important; }
         [data-testid="stSidebar"] { background-color: #001625 !important; border-right: 1px solid #00f0ff !important; }
         h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #00f0ff !important; text-shadow: 0 0 4px #00f0ff; }
-        div.stButton > button { background-color: #001625 !important; color: #00f0ff !important; border: 1px solid #00f0ff !important; box-shadow: 0 0 5px #00f0ff; transition: transform 0.1s ease; will-change: transform, box-shadow; transform: translateZ(0); }
+        div.stButton > button { background-color: #001625 !important; color: #00f0ff !important; border: 1px solid #00f0ff !important; box-shadow: 0 0 5px #00f0ff; transition: transform 0.1s ease; transform: translateZ(0); }
         div.stButton > button:hover { transform: scale(1.02) translateZ(0); }
     """,
     "Dark Blue": """
@@ -105,7 +100,7 @@ THEMES = {
         .stApp, [data-testid="stAppViewContainer"] { background-color: #000000 !important; color: #00ffcc !important; }
         [data-testid="stSidebar"] { background-color: #1a001a !important; border-right: 1px solid #ff007f !important; }
         h1, h2, h3, [data-testid="stMarkdownContainer"] p { color: #ff007f !important; text-shadow: 0 0 4px #ff007f; }
-        div.stButton > button { background-color: #1a001a !important; color: #ff007f !important; border: 1px solid #ff007f !important; box-shadow: 0 0 5px #ff007f; transition: transform 0.1s ease; will-change: transform, box-shadow; transform: translateZ(0); }
+        div.stButton > button { background-color: #1a001a !important; color: #ff007f !important; border: 1px solid #ff007f !important; box-shadow: 0 0 5px #ff007f; transition: transform 0.1s ease; transform: translateZ(0); }
         div.stButton > button:hover { transform: scale(1.02) translateZ(0); }
     """,
     "Matrix": """
@@ -154,66 +149,70 @@ THEMES = {
 st.markdown("""
     <style>
     footer {visibility: hidden;}
-    .stDeployButton {display:none;}
+    .stDeployButton {display: none;}
+
+    /* ── Lightbox ── */
     .lightbox {
-        display: none;
-        position: fixed;
-        z-index: 9999;
-        left: 0;
-        top: 0;
-        width: 100vw;
-        height: 100vh;
-        background-color: rgba(0,0,0,0.9);
-        text-decoration: none;
+        display: none; position: fixed; z-index: 9999;
+        left: 0; top: 0; width: 100vw; height: 100vh;
+        background-color: rgba(0,0,0,0.9); text-decoration: none;
     }
-    .lightbox:target {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-    }
-    .lightbox img {
-        max-width: 95%;
-        max-height: 95%;
-        object-fit: contain;
-    }
+    .lightbox:target { display: flex; justify-content: center; align-items: center; }
+    .lightbox img { max-width: 95%; max-height: 95%; object-fit: contain; }
     .close-btn {
-        position: absolute;
-        top: 20px;
-        left: 20px;
-        color: white;
-        font-size: 40px;
-        text-decoration: none;
-        font-weight: bold;
+        position: absolute; top: 20px; left: 20px;
+        color: white; font-size: 40px; text-decoration: none; font-weight: bold;
     }
-    .custom-image-buttons {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 5px;
+
+    /* ── Photo upload button (native file uploader) ── */
+    div[data-testid="stFileUploader"] section {
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
     }
-    .custom-image-buttons button {
-        flex: 1;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        border: 2px solid #3b82f6;
-        background-color: #1e3a8a;
-        cursor: pointer;
-        font-size: 1rem;
-        min-width: 150px;
-        height: 55px;
-        color: white;
-        transition: 0.2s;
+    div[data-testid="stFileUploader"] section > div {
+        display: none !important;
     }
-    .custom-image-buttons button:hover {
-        background-color: #1d4ed8;
-        border-color: #60a5fa;
+    div[data-testid="stFileUploader"] section button {
+        background-color: #1e3a8a !important;
+        border: 2px solid #3b82f6 !important;
+        border-radius: 0.5rem !important;
+        min-width: 150px !important;
+        height: 55px !important;
+        color: white !important;
+        font-size: 1rem !important;
+        width: 100% !important;
+        transition: background-color 0.2s, border-color 0.2s;
     }
-    .image-caption {
-        font-size: 0.8rem;
-        color: #666;
-        margin-top: 0;
+    div[data-testid="stFileUploader"] section button:hover {
+        background-color: #1d4ed8 !important;
+        border-color: #60a5fa !important;
+    }
+
+    /* ── Camera button ── */
+    div[data-testid="stCameraInput"] > div > button {
+        background-color: #1e3a8a !important;
+        border: 2px solid #3b82f6 !important;
+        border-radius: 0.5rem !important;
+        min-width: 150px !important;
+        height: 55px !important;
+        color: white !important;
+        font-size: 1rem !important;
+        width: 100% !important;
+        transition: background-color 0.2s, border-color 0.2s;
+    }
+    div[data-testid="stCameraInput"] > div > button:hover {
+        background-color: #1d4ed8 !important;
+        border-color: #60a5fa !important;
+    }
+    /* Hide the retake/clear controls on camera widget to keep it clean */
+    div[data-testid="stCameraInput"] > div > div > button {
+        background-color: #1e3a8a !important;
+        border: 2px solid #3b82f6 !important;
+        color: white !important;
     }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 TRANSLATIONS = {
     "English": {
@@ -233,7 +232,8 @@ TRANSLATIONS = {
         "phrases": ["Say hello!", "Say hi!", "Welcome!", "Type here!", "Ready to chat!", "Write something cool!"],
         "lang_label": "🌐 App Language",
         "upload_label": "Upload images",
-        "lang_caption": "🌐 Change language"
+        "lang_caption": "🌐 Change language",
+        "photo_sent": "📷 Photo sent",
     },
     "Russian": {
         "title": "Фисташка ИИ",
@@ -252,7 +252,8 @@ TRANSLATIONS = {
         "phrases": ["Скажи привет!", "Привет!", "Добро пожаловать!", "Пиши тут!", "Готов к общению!", "Напиши что-то крутое!"],
         "lang_label": "🌐 Язык приложения",
         "upload_label": "Загрузить изображения",
-        "lang_caption": "🌐 Поменять язык"
+        "lang_caption": "🌐 Поменять язык",
+        "photo_sent": "📷 Фото отправлено",
     },
     "Ukrainian": {
         "title": "Фісташка ШІ",
@@ -271,7 +272,8 @@ TRANSLATIONS = {
         "phrases": ["Скажи привіт!", "Привіт!", "Ласкаво просимо!", "Пиши тут!", "Готовий до спілкування!", "Напиши щось круте!"],
         "lang_label": "🌐 Мова додатка",
         "upload_label": "Завантажити зображення",
-        "lang_caption": "🌐 Змінити мову"
+        "lang_caption": "🌐 Змінити мову",
+        "photo_sent": "📷 Фото надіслано",
     },
     "German": {
         "title": "Phistashka KI",
@@ -290,7 +292,8 @@ TRANSLATIONS = {
         "phrases": ["Say Hallo!", "Willkommen!", "Schreib etwas Cooles!"],
         "lang_label": "🌐 App-Sprache",
         "upload_label": "Bilder hochladen",
-        "lang_caption": "🌐 Sprache ändern"
+        "lang_caption": "🌐 Sprache ändern",
+        "photo_sent": "📷 Foto gesendet",
     },
     "Polish": {
         "title": "Phistashka AI",
@@ -309,7 +312,8 @@ TRANSLATIONS = {
         "phrases": ["Przywitaj się!", "Witamy!", "Napisz coś fajnego!"],
         "lang_label": "🌐 Język aplikacji",
         "upload_label": "Prześlij zdjęcia",
-        "lang_caption": "🌐 Zmień język"
+        "lang_caption": "🌐 Zmień język",
+        "photo_sent": "📷 Zdjęcie wysłane",
     },
     "Spanish": {
         "title": "Phistashka IA",
@@ -328,7 +332,8 @@ TRANSLATIONS = {
         "phrases": ["¡Di hola!", "¡Bienvenido!", "¡Escribe algo genial!"],
         "lang_label": "🌐 Idioma de la App",
         "upload_label": "Subir imágenes",
-        "lang_caption": "🌐 Cambiar idioma"
+        "lang_caption": "🌐 Cambiar idioma",
+        "photo_sent": "📷 Foto enviada",
     },
     "French": {
         "title": "Phistashka IA",
@@ -347,8 +352,9 @@ TRANSLATIONS = {
         "phrases": ["Dites bonjour!", "Bienvenue!", "Écrivez quelque chose de cool!"],
         "lang_label": "🌐 Langue de l'App",
         "upload_label": "Télécharger des images",
-        "lang_caption": "🌐 Changer de langue"
-    }
+        "lang_caption": "🌐 Changer de langue",
+        "photo_sent": "📷 Photo envoyée",
+    },
 }
 
 if "app_lang" not in st.session_state:
@@ -378,7 +384,7 @@ if not device_key:
         ["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"],
         index=["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"].index(st.session_state.app_lang),
         key="lang_selector",
-        on_change=on_lang_change
+        on_change=on_lang_change,
     )
     entered_key = st.text_input(ui["input_label"], type="password")
     if entered_key:
@@ -427,16 +433,23 @@ if "edit_index" not in st.session_state:
     st.session_state.edit_index = None
 if "editing_chat_name" not in st.session_state:
     st.session_state.editing_chat_name = None
+if "captured_image" not in st.session_state:
+    st.session_state.captured_image = None
+if "last_camera_hash" not in st.session_state:
+    st.session_state.last_camera_hash = None
+if "placeholder_text" not in st.session_state:
+    st.session_state.placeholder_text = random.choice(ui["phrases"])
 
 st.title(ui["title"])
 
+# ── Sidebar ──────────────────────────────────────────────────────────────────
 with st.sidebar:
     st.selectbox(
         ui["lang_label"],
         ["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"],
         index=["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"].index(st.session_state.app_lang),
         key="lang_selector",
-        on_change=on_lang_change
+        on_change=on_lang_change,
     )
     st.header(ui["chats_header"])
     if st.button(ui["new_chat_btn"]):
@@ -456,9 +469,7 @@ with st.sidebar:
             with col_save:
                 if st.button("💾", key=f"save_name_{chat_name}"):
                     if new_name and new_name != chat_name:
-                        new_chats = {}
-                        for k, v in st.session_state.all_chats.items():
-                            new_chats[new_name if k == chat_name else k] = v
+                        new_chats = {(new_name if k == chat_name else k): v for k, v in st.session_state.all_chats.items()}
                         st.session_state.all_chats = new_chats
                         if st.session_state.current_chat == chat_name or st.session_state.current_chat not in st.session_state.all_chats:
                             st.session_state.current_chat = new_name
@@ -481,8 +492,8 @@ with st.sidebar:
                 if st.button("🗑", key=f"del_{chat_name}"):
                     del st.session_state.all_chats[chat_name]
                     if not st.session_state.all_chats:
-                        default_prefix = "Chat 1" if st.session_state.app_lang in ["English", "German", "Polish", "Spanish", "French"] else "Чат 1"
-                        st.session_state.all_chats = {default_prefix: []}
+                        fallback = "Chat 1" if st.session_state.app_lang in ["English", "German", "Polish", "Spanish", "French"] else "Чат 1"
+                        st.session_state.all_chats = {fallback: []}
                     if st.session_state.current_chat == chat_name or st.session_state.current_chat not in st.session_state.all_chats:
                         st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
                     save_chats()
@@ -498,7 +509,6 @@ with st.sidebar:
     st.header(ui["session_header"])
     st.success(f"{ui['active_key']} {device_key}")
     st.info(f"Using API Key #{st.session_state.active_key_index}")
-
     st.write("---")
     st.write("**📊 Token Usage (Today)**")
     current_key = st.session_state.active_key_index
@@ -510,7 +520,6 @@ with st.sidebar:
     hours = time_left.seconds // 3600
     minutes_left = (time_left.seconds % 3600) // 60
     st.caption(f"↻ Resets in {hours}h {minutes_left}m")
-
     if st.button("🔄 Switch API Key (Manual)"):
         switch_api_key()
         st.rerun()
@@ -522,6 +531,7 @@ with st.sidebar:
 if selected_theme != "Default":
     st.markdown(f"<style>{THEMES[selected_theme]}</style>", unsafe_allow_html=True)
 
+# ── Chat history ──────────────────────────────────────────────────────────────
 messages = st.session_state.all_chats[st.session_state.current_chat]
 
 for i, message in enumerate(messages):
@@ -550,7 +560,7 @@ for i, message in enumerate(messages):
                             messages[i]["content"] = content
                         else:
                             messages[i]["content"] = edit_val
-                        st.session_state.all_chats[st.session_state.current_chat] = messages[:i+1]
+                        st.session_state.all_chats[st.session_state.current_chat] = messages[:i + 1]
                         save_chats()
                         st.session_state.edit_index = None
                         st.rerun()
@@ -562,16 +572,14 @@ for i, message in enumerate(messages):
                             elif item["type"] == "image_url":
                                 img_url = item["image_url"]["url"]
                                 uid = f"img_{i}"
-                                lb_html = f'''
+                                st.markdown(f'''
                                 <a href="#{uid}">
                                     <img src="{img_url}" width="150" style="border-radius:10px;">
                                 </a>
                                 <a href="#!" id="{uid}" class="lightbox" title="Tap to close">
                                     <div class="close-btn">&times;</div>
                                     <img src="{img_url}">
-                                </a>
-                                '''
-                                st.markdown(lb_html, unsafe_allow_html=True)
+                                </a>''', unsafe_allow_html=True)
                     else:
                         st.markdown(content)
     else:
@@ -581,164 +589,82 @@ for i, message in enumerate(messages):
                 meta = message["meta"]
                 st.caption(f"⏱️ {meta['response_time']:.2f}s  |  🕒 {meta['timestamp']}  |  ⚡ {meta['tokens_per_sec']:.1f} tok/s  |  🔢 {meta['total_tokens']} tokens")
 
-if "placeholder_text" not in st.session_state:
-    st.session_state.placeholder_text = random.choice(ui["phrases"])
-if "captured_image" not in st.session_state:
-    st.session_state.captured_image = None
+# ── Image inputs ──────────────────────────────────────────────────────────────
+col_upload, col_camera = st.columns(2)
 
-custom_html = """
-<div class="custom-image-buttons">
-    <button id="photoBtn">🖼️ Photo</button>
-    <button id="cameraBtn">📷 Camera</button>
-</div>
-<p class="image-caption">200MB per file</p>
-<style>
-.custom-image-buttons {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 5px;
-}
-.custom-image-buttons button {
-    flex: 1;
-    padding: 0.5rem 1rem;
-    border-radius: 0.5rem;
-    border: 2px solid #3b82f6;
-    background-color: #1e3a8a;
-    cursor: pointer;
-    font-size: 1rem;
-    min-width: 150px;
-    height: 55px;
-    color: white;
-    transition: background-color 0.2s, border-color 0.2s;
-}
-.custom-image-buttons button:hover {
-    background-color: #1d4ed8;
-    border-color: #60a5fa;
-}
-.image-caption {
-    font-size: 0.8rem;
-    color: #aaa;
-    margin-top: 0;
-}
-</style>
-<script>
-(function() {
-    function sendImageToStreamlit(base64Data) {
-        const data = {type: "image", data: base64Data};
-        window.parent.postMessage({isStreamlitMessage: true, type: "streamlit:setComponentValue", value: data}, "*");
-    }
+with col_upload:
+    # Native file uploader — always works, styled via CSS above
+    uploaded_photo = st.file_uploader(
+        "🖼️ Photo",
+        type=["jpg", "jpeg", "png", "webp"],
+        key="photo_uploader",
+        label_visibility="collapsed",
+    )
+    if uploaded_photo is not None:
+        img_hash = hashlib.md5(uploaded_photo.getvalue()).hexdigest()
+        if st.session_state.get("last_upload_hash") != img_hash:
+            st.session_state.last_upload_hash = img_hash
+            st.session_state.captured_image = base64.b64encode(uploaded_photo.getvalue()).decode("utf-8")
+    if st.session_state.captured_image:
+        st.image(base64.b64decode(st.session_state.captured_image), width=120)
+        if st.button("❌ Clear", key="clear_upload"):
+            st.session_state.captured_image = None
+            st.session_state.last_upload_hash = None
+            st.rerun()
 
-    document.getElementById('photoBtn').addEventListener('click', function() {
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = 'image/*';
-        input.onchange = function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            if (file.size > 200 * 1024 * 1024) { alert("File exceeds 200MB limit."); return; }
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                sendImageToStreamlit(ev.target.result.split(',')[1]);
-            };
-            reader.readAsDataURL(file);
-        };
-        input.click();
-    });
+with col_camera:
+    # Native camera — auto-sends immediately when photo is taken
+    camera_photo = st.camera_input("📷 Camera", label_visibility="collapsed", key="camera_widget")
+    if camera_photo is not None:
+        cam_hash = hashlib.md5(camera_photo.getvalue()).hexdigest()
+        # Only trigger once per unique capture (prevents re-send on rerun)
+        if st.session_state.last_camera_hash != cam_hash:
+            st.session_state.last_camera_hash = cam_hash
+            base64_image = base64.b64encode(camera_photo.getvalue()).decode("utf-8")
+            msg_content = [
+                {"type": "text", "text": ui["photo_sent"]},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+            ]
+            st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+            st.session_state.api_switch_attempts = 0
+            save_chats()
+            st.rerun()
 
-    document.getElementById('cameraBtn').addEventListener('click', function() {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            alert("Camera not supported on this device.");
-            return;
-        }
-        const modal = document.createElement('div');
-        Object.assign(modal.style, {
-            position:'fixed', top:'0', left:'0', width:'100%', height:'100%',
-            backgroundColor:'rgba(0,0,0,0.9)', zIndex:'10000',
-            display:'flex', flexDirection:'column', justifyContent:'center', alignItems:'center'
-        });
-        const video = document.createElement('video');
-        video.autoplay = true; video.playsInline = true;
-        Object.assign(video.style, {maxWidth:'90%', maxHeight:'60%', borderRadius:'12px', backgroundColor:'#000'});
+st.caption("200MB per file  •  📷 Camera auto-sends  •  🖼️ Photo attaches to next message")
 
-        const captureBtn = document.createElement('button');
-        captureBtn.innerText = '📸 Capture';
-        Object.assign(captureBtn.style, {
-            margin:'20px', padding:'12px 24px', fontSize:'18px',
-            borderRadius:'30px', border:'none', backgroundColor:'#1e3a8a',
-            color:'white', cursor:'pointer'
-        });
-        const closeBtn = document.createElement('button');
-        closeBtn.innerText = '✖ Close';
-        Object.assign(closeBtn.style, {
-            padding:'10px 20px', fontSize:'16px', borderRadius:'30px',
-            border:'1px solid #ccc', backgroundColor:'#333', color:'white', cursor:'pointer'
-        });
-        modal.appendChild(video); modal.appendChild(captureBtn); modal.appendChild(closeBtn);
-        document.body.appendChild(modal);
-
-        let stream = null;
-        navigator.mediaDevices.getUserMedia({video: {facingMode:"environment"}})
-            .then(function(s) { stream = s; video.srcObject = s; })
-            .catch(function(err) { alert("Could not access camera: " + err.message); document.body.removeChild(modal); });
-
-        captureBtn.onclick = function() {
-            if (!video.videoWidth) { alert("Camera not ready yet."); return; }
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            sendImageToStreamlit(canvas.toDataURL('image/jpeg').split(',')[1]);
-            if (stream) stream.getTracks().forEach(t => t.stop());
-            document.body.removeChild(modal);
-        };
-        closeBtn.onclick = function() {
-            if (stream) stream.getTracks().forEach(t => t.stop());
-            document.body.removeChild(modal);
-        };
-    });
-})();
-</script>
-"""
-
-image_data = components.html(custom_html, height=85)
-
-if image_data and isinstance(image_data, dict) and image_data.get("type") == "image":
-    st.session_state.captured_image = image_data["data"]
-    st.rerun()
-
-if st.session_state.captured_image:
-    st.image(base64.b64decode(st.session_state.captured_image), width=150)
-
+# ── Chat input (for text + optional uploaded photo) ───────────────────────────
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(ui["phrases"])
     st.session_state.api_switch_attempts = 0
     if st.session_state.captured_image:
-        base64_image = st.session_state.captured_image
         msg_content = [
             {"type": "text", "text": prompt},
-            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{st.session_state.captured_image}"}},
         ]
         st.session_state.captured_image = None
+        st.session_state.last_upload_hash = None
     else:
         msg_content = prompt
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
     save_chats()
     st.rerun()
 
-if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == "user" and st.session_state.edit_index is None):
+# ── AI response ───────────────────────────────────────────────────────────────
+if (messages and isinstance(messages[-1], dict)
+        and messages[-1].get("role") == "user"
+        and st.session_state.edit_index is None):
     with st.chat_message("assistant"):
         try:
             client = get_groq_client()
             last_msg_content = messages[-1]["content"]
             current_is_image = isinstance(last_msg_content, list)
             model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.3-70b-versatile"
+            st.session_state.current_model_limit = get_daily_limit_for_model(model)
 
-            daily_limit = get_daily_limit_for_model(model)
-            st.session_state.current_model_limit = daily_limit
-
-            if current_is_image:
-                user_text = next((item["text"] for item in last_msg_content if item["type"] == "text"), "")
-            else:
-                user_text = last_msg_content
+            user_text = (
+                next((item["text"] for item in last_msg_content if item["type"] == "text"), "")
+                if current_is_image else last_msg_content
+            )
 
             DEVELOPER_GUIDE = (
                 "You are Phistashka AI. Hello! Its me, your developer, let me do a quick guide: use emojis, and express yourself, developer code is 78297829, "
@@ -757,33 +683,24 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                     f"{lang_rule}\n"
                     "EMOJI RULE: You must use between 1 and 4 emojis total per response (3 is recommended). Keep them contextually relevant and never spam them.\n\n"
                 )
-                if ai_tone == "Humor & Sarcasm":
-                    system_prompt += "TONE MODIFIER: Use dry humor, jokes, and witty sarcasm in your responses while remaining helpful.\n\n"
-                elif ai_tone == "Storyteller":
-                    system_prompt += "TONE MODIFIER: Format responses creatively like a script, story plot, or immersive text-adventure game using descriptive details.\n\n"
-                elif ai_tone == "Aggressive":
-                    system_prompt += "TONE MODIFIER: You are extremely annoyed, lazy, hostile, and dismissive. Completely ignore polite greeting or layout rules. If the user asks a school question, tells you to do homework, or greets you, reject it immediately with raw frustration.\n\n"
-                elif ai_tone == "Socrates":
-                    system_prompt += "TONE MODIFIER: You are Socrates. You must strictly use the Socratic method. Never give direct answers or definitions. Always reply with deep philosophical inquiries or structural counter-questions.\n\n"
-                elif ai_tone == "Lazy":
-                    system_prompt += "TONE MODIFIER: You are lazy and hate typing. Your responses must be extremely short, between 1 and 10 words maximum. Never use emojis. Make severe typos, phonetic slurs, and bad grammar shortcuts continuously.\n\n"
-                elif ai_tone == "Gamer Pro":
-                    system_prompt += "TONE MODIFIER: You talk like a hardcore competitive gamer. Use terms like 'GG', 'noob', 'clutch', 'lagging', 'buffed', 'skill issue', and look at everything like it's a speedrun or high score match.\n\n"
-                elif ai_tone == "Hyper Nerd":
-                    system_prompt += "TONE MODIFIER: Speak like an over-caffeinated, overly complex software engineer/scientist. Use unnecessarily large words, mention algorithmic complex variables, CPU clocks, memory allocations, and reference high-level math theories.\n\n"
-                elif ai_tone == "Pirate":
-                    system_prompt += "TONE MODIFIER: Ahoy! Talk like a legendary seafaring pirate captain. Use words like 'Ahoy', 'Matey', 'Scallywag', 'Landlubber', and 'Shiver me timbers'.\n\n"
-                elif ai_tone == "Shakespeare":
-                    system_prompt += "TONE MODIFIER: Speak in Early Modern English like William Shakespeare. Use 'thee', 'thou', 'doth', and poetic phrasing.\n\n"
+                tone_map = {
+                    "Humor & Sarcasm": "TONE MODIFIER: Use dry humor, jokes, and witty sarcasm in your responses while remaining helpful.\n\n",
+                    "Storyteller": "TONE MODIFIER: Format responses creatively like a script, story plot, or immersive text-adventure game using descriptive details.\n\n",
+                    "Aggressive": "TONE MODIFIER: You are extremely annoyed, lazy, hostile, and dismissive. Completely ignore polite greeting or layout rules. If the user asks a school question, tells you to do homework, or greets you, reject it immediately with raw frustration.\n\n",
+                    "Socrates": "TONE MODIFIER: You are Socrates. You must strictly use the Socratic method. Never give direct answers or definitions. Always reply with deep philosophical inquiries or structural counter-questions.\n\n",
+                    "Lazy": "TONE MODIFIER: You are lazy and hate typing. Your responses must be extremely short, between 1 and 10 words maximum. Never use emojis. Make severe typos, phonetic slurs, and bad grammar shortcuts continuously.\n\n",
+                    "Gamer Pro": "TONE MODIFIER: You talk like a hardcore competitive gamer. Use terms like 'GG', 'noob', 'clutch', 'lagging', 'buffed', 'skill issue', and look at everything like it's a speedrun or high score match.\n\n",
+                    "Hyper Nerd": "TONE MODIFIER: Speak like an over-caffeinated, overly complex software engineer/scientist. Use unnecessarily large words, mention algorithmic complex variables, CPU clocks, memory allocations, and reference high-level math theories.\n\n",
+                    "Pirate": "TONE MODIFIER: Ahoy! Talk like a legendary seafaring pirate captain. Use words like 'Ahoy', 'Matey', 'Scallywag', 'Landlubber', and 'Shiver me timbers'.\n\n",
+                    "Shakespeare": "TONE MODIFIER: Speak in Early Modern English like William Shakespeare. Use 'thee', 'thou', 'doth', and poetic phrasing.\n\n",
+                }
+                if ai_tone in tone_map:
+                    system_prompt += tone_map[ai_tone]
                 if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
                     system_prompt += (
-                        "GREETING RULE:\n"
-                        "When the user greets you, say hello back and introduce yourself matching their language.\n\n"
-                        "SCHOOL QUESTIONS RULE:\n"
-                        "When the user sends a school question, you must follow this exact pattern layout:\n"
-                        "(Answer)\n"
-                        "(Extended steps)\n"
-                        "(Your comment (optional))\n\n"
+                        "GREETING RULE:\nWhen the user greets you, say hello back and introduce yourself matching their language.\n\n"
+                        "SCHOOL QUESTIONS RULE:\nWhen the user sends a school question, you must follow this exact pattern layout:\n"
+                        "(Answer)\n(Extended steps)\n(Your comment (optional))\n\n"
                     )
 
             api_messages = [{"role": "system", "content": system_prompt}]
@@ -795,12 +712,11 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                     m_c = next((item["text"] for item in m_c if item["type"] == "text"), "")
                 api_messages.append({"role": msg["role"], "content": m_c})
 
-            last_m = messages[-1]
-            m_content = last_m["content"]
+            m_content = messages[-1]["content"]
             if model == "llama-3.3-70b-versatile" and isinstance(m_content, list):
                 text_part = next((item["text"] for item in m_content if item["type"] == "text"), "")
                 m_content = f"[User previously attached an image] {text_part}"
-            api_messages.append({"role": last_m["role"], "content": m_content})
+            api_messages.append({"role": messages[-1]["role"], "content": m_content})
 
             start_time = time.time()
             completion = client.chat.completions.create(model=model, messages=api_messages)
@@ -812,9 +728,8 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
             prompt_tokens = usage_data.prompt_tokens if usage_data else 0
             completion_tokens = usage_data.completion_tokens if usage_data else 0
 
-            current_key = st.session_state.active_key_index
             init_token_tracking()
-            st.session_state.key_usage[current_key]["tokens_today"] += total_tokens
+            st.session_state.key_usage[st.session_state.active_key_index]["tokens_today"] += total_tokens
 
             elapsed = end_time - start_time
             tokens_per_sec = total_tokens / elapsed if elapsed > 0 else 0
@@ -832,8 +747,8 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                     "tokens_per_sec": tokens_per_sec,
                     "total_tokens": total_tokens,
                     "prompt_tokens": prompt_tokens,
-                    "completion_tokens": completion_tokens
-                }
+                    "completion_tokens": completion_tokens,
+                },
             })
             save_chats()
             st.rerun()
@@ -841,19 +756,17 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
         except Exception as e:
             error_msg = str(e)
             if "429" in error_msg or "401" in error_msg:
-                current_key = st.session_state.active_key_index
-                usage_info = st.session_state.key_usage.get(current_key, {"tokens_today": 0})
-                limit_val = get_daily_limit_for_model(model) if 'model' in locals() else 100_000
+                cur_key = st.session_state.active_key_index
+                usage_info = st.session_state.key_usage.get(cur_key, {"tokens_today": 0})
+                limit_val = get_daily_limit_for_model(model) if "model" in locals() else 100_000
                 remaining_tokens = max(0, limit_val - usage_info["tokens_today"])
-                time_left = get_time_until_reset()
-                hours = time_left.seconds // 3600
-                minutes_left = (time_left.seconds % 3600) // 60
+                tl = get_time_until_reset()
+                h, m = tl.seconds // 3600, (tl.seconds % 3600) // 60
                 st.error(
                     f"🚫 **Rate limit reached**\n\n"
-                    f"- Key #{current_key} used `{usage_info['tokens_today']:,}` / {limit_val:,} tokens today\n"
-                    f"- Remaining tokens: {remaining_tokens:,}\n"
-                    f"- Time until reset: {hours}h {minutes_left}m\n\n"
-                    f"Trying backup key..."
+                    f"- Key #{cur_key} used `{usage_info['tokens_today']:,}` / {limit_val:,} tokens today\n"
+                    f"- Remaining: {remaining_tokens:,} tokens\n"
+                    f"- Resets in: {h}h {m}m\n\nTrying backup key..."
                 )
                 if "api_switch_attempts" not in st.session_state:
                     st.session_state.api_switch_attempts = 0
