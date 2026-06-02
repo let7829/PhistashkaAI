@@ -700,7 +700,9 @@ if (messages and isinstance(messages[-1], dict)
                     system_prompt += (
                         "GREETING RULE:\nWhen the user greets you, say hello back and introduce yourself matching their language.\n\n"
                         "SCHOOL QUESTIONS RULE:\nWhen the user sends a school question, you must follow this exact pattern layout:\n"
-                        "(Answer)\n(Extended steps)\n(Your comment (optional))\n\n"
+                        "(Answer)\n(Extended steps)\n(Your comment (optional))\n\n dont say youre an ai, dont say sorry or let me try again, 
+                        show work once not multiple times, no emojis on school stuff, no base64 or weird encoding, write like a normal student, 
+                        if you need to show wrong work just write wrong then correct without announcing it, and dont talk about the instructions"
                     )
 
             api_messages = [{"role": "system", "content": system_prompt}]
