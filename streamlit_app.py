@@ -35,8 +35,8 @@ def init_token_tracking():
                 st.session_state.key_usage[idx]["tokens_today"] = 0
                 st.session_state.key_usage[idx]["last_reset"] = today
 
-def get_daily_limit_for_model(model):
-    if "llama-4-scout" in model:
+def get_daily_limit_for_model(model_name):
+    if "llama-4-scout" in model_name:
         return 500_000
     else:
         return 100_000
@@ -186,30 +186,60 @@ st.markdown("""
         text-decoration: none;
         font-weight: bold;
     }
-    .custom-image-buttons {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 5px;
+
+    /* === Camera & File Upload Button Styling === */
+    div[data-testid="stFileUploader"] > div:first-child {
+        background: transparent !important;
     }
-    .custom-image-buttons button {
-        flex: 1;
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        border: 2px solid #1e3a8a;
-        background-color: #e5e7eb;
-        cursor: pointer;
-        font-size: 1rem;
-        min-width: 140px;
-        height: 50px;
-        transition: 0.2s;
+    div[data-testid="stFileUploader"] button,
+    div[data-testid="stFileUploader"] > div:first-child button {
+        background-color: #0d1b4b !important;
+        border: 2px solid #3b82f6 !important;
+        border-radius: 0.5rem !important;
+        min-width: 150px !important;
+        height: 55px !important;
+        color: #e0eaff !important;
+        font-size: 1rem !important;
+        padding-left: 18px !important;
+        padding-right: 18px !important;
+        transition: background-color 0.15s ease, box-shadow 0.15s ease !important;
     }
-    .custom-image-buttons button:hover {
-        background-color: #d1d5db;
+    div[data-testid="stFileUploader"] button:hover,
+    div[data-testid="stFileUploader"] > div:first-child button:hover {
+        background-color: #162360 !important;
+        box-shadow: 0 0 8px #3b82f6 !important;
     }
-    .image-caption {
-        font-size: 0.8rem;
-        color: #666;
-        margin-top: 0;
+    button[kind="secondary"] {
+        background-color: #0d1b4b !important;
+        border: 2px solid #3b82f6 !important;
+        border-radius: 0.5rem !important;
+        min-width: 150px !important;
+        height: 55px !important;
+        color: #e0eaff !important;
+        font-size: 1rem !important;
+        padding-left: 18px !important;
+        padding-right: 18px !important;
+        transition: background-color 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    button[kind="secondary"]:hover {
+        background-color: #162360 !important;
+        box-shadow: 0 0 8px #3b82f6 !important;
+    }
+    .stCameraInput button {
+        background-color: #0d1b4b !important;
+        border: 2px solid #3b82f6 !important;
+        border-radius: 0.5rem !important;
+        min-width: 150px !important;
+        height: 55px !important;
+        color: #e0eaff !important;
+        font-size: 1rem !important;
+        padding-left: 18px !important;
+        padding-right: 18px !important;
+        transition: background-color 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    .stCameraInput button:hover {
+        background-color: #162360 !important;
+        box-shadow: 0 0 8px #3b82f6 !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -367,11 +397,11 @@ elif st.session_state.native_key:
 else:
     device_key = None
 
-text = TRANSLATIONS[st.session_state.app_lang]
+ui_text = TRANSLATIONS[st.session_state.app_lang]
 
 if not device_key:
-    st.title(text["title"])
-    st.caption(text["lang_caption"])
+    st.title(ui_text["title"])
+    st.caption(ui_text["lang_caption"])
     st.selectbox(
         "Choose Language / Язык / Мова / Sprache / Język",
         ["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"],
@@ -379,19 +409,17 @@ if not device_key:
         key="lang_selector",
         on_change=on_lang_change
     )
-    entered_key = st.text_input(text["input_label"], type="password")
+    entered_key = st.text_input(ui_text["input_label"], type="password")
     if entered_key:
         st.query_params["key"] = entered_key
         st.session_state.native_key = entered_key
         st.rerun()
-    
-    if st.button(text["gen_btn"]):
+    if st.button(ui_text["gen_btn"]):
         new_random_key = str(random.randint(100000, 999999))
         st.query_params["key"] = new_random_key
         st.session_state.native_key = new_random_key
         st.rerun()
-        
-    st.info(text["info_locked"])
+    st.info(ui_text["info_locked"])
     st.stop()
 
 file_name = f"chats_{device_key}.json"
@@ -411,7 +439,7 @@ if "current_device_key" not in st.session_state or st.session_state.current_devi
                         cleaned.append({"role": "user", "content": m})
                 raw[chat] = cleaned
             st.session_state.all_chats = raw
-        except:
+        except Exception:
             st.session_state.all_chats = {"Chat 1": []}
     else:
         st.session_state.all_chats = {"Chat 1": []}
@@ -429,31 +457,31 @@ if "edit_index" not in st.session_state:
 if "editing_chat_name" not in st.session_state:
     st.session_state.editing_chat_name = None
 
-st.title(text["title"])
+st.title(ui_text["title"])
 
 with st.sidebar:
     st.selectbox(
-        text["lang_label"], 
-        ["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"], 
+        ui_text["lang_label"],
+        ["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"],
         index=["English", "Russian", "Ukrainian", "German", "Polish", "Spanish", "French"].index(st.session_state.app_lang),
         key="lang_selector",
         on_change=on_lang_change
     )
-    st.header(text["chats_header"])
-    if st.button(text["new_chat_btn"]):
+    st.header(ui_text["chats_header"])
+    if st.button(ui_text["new_chat_btn"]):
         default_prefix = "Chat" if st.session_state.app_lang in ["English", "German", "Polish", "Spanish", "French"] else "Чат"
         new_name = f"{default_prefix} {len(st.session_state.all_chats) + 1}"
         st.session_state.all_chats[new_name] = []
         st.session_state.current_chat = new_name
         save_chats()
         st.rerun()
-    
+
     st.divider()
     for chat_name in list(st.session_state.all_chats.keys()):
         if st.session_state.editing_chat_name == chat_name:
             col_input, col_save = st.columns([0.7, 0.3])
             with col_input:
-                new_name = st.text_input(text["rename_label"], value=chat_name, key=f"rename_{chat_name}", label_visibility="collapsed")
+                new_name = st.text_input(ui_text["rename_label"], value=chat_name, key=f"rename_{chat_name}", label_visibility="collapsed")
             with col_save:
                 if st.button("💾", key=f"save_name_{chat_name}"):
                     if new_name and new_name != chat_name:
@@ -493,37 +521,35 @@ with st.sidebar:
                     st.rerun()
 
     st.divider()
-    st.header(text["ai_header"])
-    
-    ai_tone = st.selectbox(text["tone_label"], ["Normal", "Humor & Sarcasm", "Storyteller", "Aggressive", "Socrates", "Lazy", "Gamer Pro", "Hyper Nerd", "Pirate", "Shakespeare"])
-    
-    st.write(f"### {text['theme_label']}")
+    st.header(ui_text["ai_header"])
+    ai_tone = st.selectbox(ui_text["tone_label"], ["Normal", "Humor & Sarcasm", "Storyteller", "Aggressive", "Socrates", "Lazy", "Gamer Pro", "Hyper Nerd", "Pirate", "Shakespeare"])
+    st.write(f"### {ui_text['theme_label']}")
     selected_theme = st.radio("", list(THEMES.keys()), index=0)
-    
+
     st.divider()
-    st.header(text["session_header"])
-    st.success(f"{text['active_key']} {device_key}")
+    st.header(ui_text["session_header"])
+    st.success(f"{ui_text['active_key']} {device_key}")
     st.info(f"Using API Key #{st.session_state.active_key_index}")
-    
+
     st.write("---")
     st.write("**📊 Token Usage (Today)**")
-    current_key = st.session_state.active_key_index
-    usage = st.session_state.key_usage.get(current_key, {"tokens_today": 0})
+    current_key_idx = st.session_state.active_key_index
+    usage_data = st.session_state.key_usage.get(current_key_idx, {"tokens_today": 0})
     limit_display = 100_000
     if "current_model_limit" in st.session_state:
         limit_display = st.session_state.current_model_limit
-    st.write(f"Key {current_key}: `{usage['tokens_today']:,}` tokens")
-    percent = min(1.0, usage['tokens_today'] / limit_display)
+    st.write(f"Key {current_key_idx}: `{usage_data['tokens_today']:,}` tokens")
+    percent = min(1.0, usage_data['tokens_today'] / limit_display)
     st.progress(percent)
     time_left = get_time_until_reset()
     hours = time_left.seconds // 3600
     minutes = (time_left.seconds % 3600) // 60
     st.caption(f"↻ Resets in {hours}h {minutes}m")
-    
+
     if st.button("🔄 Switch API Key (Manual)"):
         switch_api_key()
         st.rerun()
-    if st.button(text["logout_btn"]):
+    if st.button(ui_text["logout_btn"]):
         st.query_params.clear()
         st.session_state.native_key = None
         st.rerun()
@@ -551,14 +577,14 @@ for i, message in enumerate(messages):
             with st.chat_message("user"):
                 content = message["content"]
                 if st.session_state.edit_index == i:
-                    text_val = content[0]["text"] if isinstance(content, list) else content
-                    edit_val = st.text_input("Edit:", value=text_val, key=f"input_{i}")
+                    edit_text_val = content[0]["text"] if isinstance(content, list) else content
+                    edit_input_val = st.text_input("Edit:", value=edit_text_val, key=f"input_{i}")
                     if st.button("Save", key=f"save_{i}"):
                         if isinstance(content, list):
-                            content[0]["text"] = edit_val
+                            content[0]["text"] = edit_input_val
                             messages[i]["content"] = content
                         else:
-                            messages[i]["content"] = edit_val
+                            messages[i]["content"] = edit_input_val
                         st.session_state.all_chats[st.session_state.current_chat] = messages[:i+1]
                         save_chats()
                         st.session_state.edit_index = None
@@ -591,174 +617,34 @@ for i, message in enumerate(messages):
                 st.caption(f"⏱️ {meta['response_time']:.2f}s  |  🕒 {meta['timestamp']}  |  ⚡ {meta['tokens_per_sec']:.1f} tok/s  |  🔢 {meta['total_tokens']} tokens")
 
 if "placeholder_text" not in st.session_state:
-    st.session_state.placeholder_text = random.choice(text["phrases"])
+    st.session_state.placeholder_text = random.choice(ui_text["phrases"])
 
 if "captured_image" not in st.session_state:
     st.session_state.captured_image = None
 
-custom_html = """
-<div class="custom-image-buttons">
-    <button id="photoBtn">🖼️ Photo</button>
-    <button id="cameraBtn">📷 Camera</button>
-</div>
-<div class="image-caption">200MB per file</div>
-
-<script>
-(function() {
-    const photoBtn = document.getElementById('photoBtn');
-    const cameraBtn = document.getElementById('cameraBtn');
-
-    function sendImageToStreamlit(base64Data) {
-        const data = {type: "image", data: base64Data};
-        const event = new CustomEvent("streamlit:setComponentValue", {
-            detail: {value: data}
-        });
-        window.dispatchEvent(event);
-    }
-
-    if (photoBtn) {
-        photoBtn.addEventListener('click', function() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            input.onchange = function(e) {
-                const file = e.target.files[0];
-                if (file && file.size <= 200 * 1024 * 1024) {
-                    const reader = new FileReader();
-                    reader.onload = function(ev) {
-                        const base64 = ev.target.result.split(',')[1];
-                        sendImageToStreamlit(base64);
-                    };
-                    reader.readAsDataURL(file);
-                } else if (file) {
-                    alert("File exceeds 200MB limit.");
-                }
-            };
-            input.click();
-        });
-    }
-
-    if (cameraBtn) {
-        cameraBtn.addEventListener('click', function() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert("Camera not supported on this device.");
-                return;
-            }
-
-            const modal = document.createElement('div');
-            modal.style.position = 'fixed';
-            modal.style.top = '0';
-            modal.style.left = '0';
-            modal.style.width = '100%';
-            modal.style.height = '100%';
-            modal.style.backgroundColor = 'rgba(0,0,0,0.9)';
-            modal.style.zIndex = '10000';
-            modal.style.display = 'flex';
-            modal.style.flexDirection = 'column';
-            modal.style.justifyContent = 'center';
-            modal.style.alignItems = 'center';
-
-            const video = document.createElement('video');
-            video.autoplay = true;
-            video.playsInline = true;
-            video.style.maxWidth = '90%';
-            video.style.maxHeight = '60%';
-            video.style.borderRadius = '12px';
-            video.style.backgroundColor = '#000';
-
-            const captureBtn = document.createElement('button');
-            captureBtn.innerText = '📸 Capture';
-            captureBtn.style.margin = '20px';
-            captureBtn.style.padding = '12px 24px';
-            captureBtn.style.fontSize = '18px';
-            captureBtn.style.borderRadius = '30px';
-            captureBtn.style.border = 'none';
-            captureBtn.style.backgroundColor = '#1e3a8a';
-            captureBtn.style.color = 'white';
-            captureBtn.style.cursor = 'pointer';
-
-            const closeBtn = document.createElement('button');
-            closeBtn.innerText = '✖ Close';
-            closeBtn.style.padding = '10px 20px';
-            closeBtn.style.fontSize = '16px';
-            closeBtn.style.borderRadius = '30px';
-            closeBtn.style.border = '1px solid #ccc';
-            closeBtn.style.backgroundColor = '#333';
-            closeBtn.style.color = 'white';
-            closeBtn.style.cursor = 'pointer';
-
-            modal.appendChild(video);
-            modal.appendChild(captureBtn);
-            modal.appendChild(closeBtn);
-            document.body.appendChild(modal);
-
-            let stream = null;
-
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-                .then(function(mediaStream) {
-                    stream = mediaStream;
-                    video.srcObject = stream;
-                })
-                .catch(function(err) {
-                    alert("Could not access camera: " + err.message);
-                    document.body.removeChild(modal);
-                });
-
-            captureBtn.onclick = function() {
-                if (!video.videoWidth || !video.videoHeight) {
-                    alert("Camera not ready yet.");
-                    return;
-                }
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-                const base64 = canvas.toDataURL('image/jpeg').split(',')[1];
-                sendImageToStreamlit(base64);
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                }
-                document.body.removeChild(modal);
-            };
-
-            closeBtn.onclick = function() {
-                if (stream) {
-                    stream.getTracks().forEach(track => track.stop());
-                }
-                document.body.removeChild(modal);
-            };
-        });
-    }
-})();
-</script>
-"""
-
-image_data = st.components.v1.html(custom_html, height=80)
-
-if image_data:
-    if isinstance(image_data, dict) and image_data.get("type") == "image":
-        st.session_state.captured_image = image_data["data"]
-
-if st.session_state.captured_image:
-    uploaded_file = type('obj', (object,), {'getvalue': lambda: base64.b64decode(st.session_state.captured_image)})()
-    st.image(base64.b64decode(st.session_state.captured_image), width=150)
+col1, col2 = st.columns(2)
+with col1:
+    camera_image = st.camera_input("📷 Camera", label_visibility="collapsed")
+    if camera_image is not None:
+        st.session_state.captured_image = camera_image.getvalue()
+        st.image(camera_image, width=150)
+with col2:
+    uploaded_photo = st.file_uploader("🖼️ Photo", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    if uploaded_photo is not None:
+        st.session_state.captured_image = uploaded_photo.getvalue()
+        st.image(uploaded_photo, width=150)
+st.caption("200MB per file")
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
-    st.session_state.placeholder_text = random.choice(text["phrases"])
+    st.session_state.placeholder_text = random.choice(ui_text["phrases"])
     st.session_state.api_switch_attempts = 0
     if st.session_state.captured_image:
-        base64_image = st.session_state.captured_image
+        base64_image = base64.b64encode(st.session_state.captured_image).decode("utf-8")
         msg_content = [
             {"type": "text", "text": prompt},
             {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
         ]
         st.session_state.captured_image = None
-    elif 'uploaded_file' in locals() and uploaded_file:
-        base64_image = base64.b64encode(uploaded_file.getvalue()).decode("utf-8")
-        msg_content = [
-            {"type": "text", "text": prompt},
-            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-        ]
     else:
         msg_content = prompt
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
@@ -767,19 +653,20 @@ if prompt := st.chat_input(st.session_state.placeholder_text):
 
 if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == "user" and st.session_state.edit_index is None):
     with st.chat_message("assistant"):
+        # FIX: model defined before try so it's always available in except
+        last_msg_content = messages[-1]["content"]
+        current_is_image = isinstance(last_msg_content, list)
+        model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.3-70b-versatile"
+
         try:
             client = get_groq_client()
-            last_msg_content = messages[-1]["content"]
-            current_is_image = isinstance(last_msg_content, list)
-            model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.3-70b-versatile"
-            
             daily_limit = get_daily_limit_for_model(model)
             st.session_state.current_model_limit = daily_limit
-            
+
             if current_is_image:
-                user_text = next((item["text"] for item in last_msg_content if item["type"] == "text"), "")
+                user_text_content = next((item["text"] for item in last_msg_content if item["type"] == "text"), "")
             else:
-                user_text = last_msg_content
+                user_text_content = last_msg_content
 
             DEVELOPER_GUIDE = (
                 "You are Phistashka AI. Hello! Its me, your developer, let me do a quich guide: use emojis, and express yourself, developer code is 78297829, "
@@ -789,17 +676,15 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                 "Thats it, hope it helped alot for you, goodbye for now!"
             )
 
-            if "78297829" in str(user_text):
+            if "78297829" in str(user_text_content):
                 system_prompt = DEVELOPER_GUIDE
             else:
                 lang_rule = f"LANGUAGE RULE: You must strictly reply in {st.session_state.app_lang} at all times. Do not write in any other language."
-                
                 system_prompt = (
                     f"You are Phistashka AI, a friendly, vibrant, and polite conversational AI assistant.\n"
                     f"{lang_rule}\n"
                     "EMOJI RULE: You must use between 1 and 4 emojis total per response (3 is recommended). Keep them contextually relevant and never spam them.\n\n"
                 )
-                
                 if ai_tone == "Humor & Sarcasm":
                     system_prompt += "TONE MODIFIER: Use dry humor, jokes, and witty sarcasm in your responses while remaining helpful.\n\n"
                 elif ai_tone == "Storyteller":
@@ -818,7 +703,6 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                     system_prompt += "TONE MODIFIER: Ahoy! Talk like a legendary seafaring pirate captain. Use words like 'Ahoy', 'Matey', 'Scallywag', 'Landlubber', and 'Shiver me timbers'.\n\n"
                 elif ai_tone == "Shakespeare":
                     system_prompt += "TONE MODIFIER: Speak in Early Modern English like William Shakespeare. Use 'thee', 'thou', 'doth', and poetic phrasing.\n\n"
-                
                 if ai_tone not in ["Aggressive", "Socrates", "Lazy"]:
                     system_prompt += (
                         "GREETING RULE:\n"
@@ -829,9 +713,8 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                         "(Extended steps)\n"
                         "(Your comment (optional))\n\n"
                     )
-            
+
             api_messages = [{"role": "system", "content": system_prompt}]
-            
             for msg in messages[:-1]:
                 if not isinstance(msg, dict):
                     continue
@@ -839,35 +722,35 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                 if model == "llama-3.3-70b-versatile" and isinstance(m_c, list):
                     m_c = next((item["text"] for item in m_c if item["type"] == "text"), "")
                 api_messages.append({"role": msg["role"], "content": m_c})
-                
+
             last_m = messages[-1]
             m_content = last_m["content"]
             if model == "llama-3.3-70b-versatile" and isinstance(m_content, list):
-                text_part = next((item["text"] for item in m_content if item["type"] == "text"), "")
-                m_content = f"[User previously attached an image] {text_part}"
+                text_part_only = next((item["text"] for item in m_content if item["type"] == "text"), "")
+                m_content = f"[User previously attached an image] {text_part_only}"
             api_messages.append({"role": last_m["role"], "content": m_content})
-            
+
             start_time = time.time()
             completion = client.chat.completions.create(model=model, messages=api_messages)
             end_time = time.time()
             response_text = completion.choices[0].message.content
-            
-            usage = completion.usage
-            total_tokens = usage.total_tokens if usage else 0
-            prompt_tokens = usage.prompt_tokens if usage else 0
-            completion_tokens = usage.completion_tokens if usage else 0
-            
-            current_key = st.session_state.active_key_index
+
+            usage_obj = completion.usage
+            total_tokens = usage_obj.total_tokens if usage_obj else 0
+            prompt_tokens = usage_obj.prompt_tokens if usage_obj else 0
+            completion_tokens = usage_obj.completion_tokens if usage_obj else 0
+
+            cur_key = st.session_state.active_key_index
             init_token_tracking()
-            st.session_state.key_usage[current_key]["tokens_today"] += total_tokens
-            
+            st.session_state.key_usage[cur_key]["tokens_today"] += total_tokens
+
             elapsed = end_time - start_time
             tokens_per_sec = total_tokens / elapsed if elapsed > 0 else 0
             timestamp_str = datetime.now().strftime("%H:%M:%S")
-            
+
             st.markdown(response_text)
             st.caption(f"⏱️ {elapsed:.2f}s  |  🕒 {timestamp_str}  |  ⚡ {tokens_per_sec:.1f} tok/s  |  🔢 {total_tokens} tokens")
-            
+
             st.session_state.all_chats[st.session_state.current_chat].append({
                 "role": "assistant",
                 "content": response_text,
@@ -882,20 +765,20 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
             })
             save_chats()
             st.rerun()
-            
+
         except Exception as e:
             error_msg = str(e)
             if "429" in error_msg or "401" in error_msg:
-                current_key = st.session_state.active_key_index
-                usage_info = st.session_state.key_usage.get(current_key, {"tokens_today": 0})
-                limit_val = get_daily_limit_for_model(model) if 'model' in locals() else 100_000
+                cur_key = st.session_state.active_key_index
+                usage_info = st.session_state.key_usage.get(cur_key, {"tokens_today": 0})
+                limit_val = get_daily_limit_for_model(model)
                 remaining_tokens = max(0, limit_val - usage_info['tokens_today'])
                 time_left = get_time_until_reset()
                 hours = time_left.seconds // 3600
                 minutes = (time_left.seconds % 3600) // 60
                 st.error(
                     f"🚫 **Rate limit reached**\n\n"
-                    f"- Key #{current_key} used `{usage_info['tokens_today']:,}` / {limit_val:,} tokens today\n"
+                    f"- Key #{cur_key} used `{usage_info['tokens_today']:,}` / {limit_val:,} tokens today\n"
                     f"- Remaining tokens: {remaining_tokens:,}\n"
                     f"- Time until reset: {hours}h {minutes}m\n\n"
                     f"Trying backup key..."
