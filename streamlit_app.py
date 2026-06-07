@@ -8,81 +8,7 @@ from datetime import datetime, timedelta
 import json
 import os
 import time
-import pathlib
 
-_COMP_DIR = pathlib.Path(os.path.abspath(__file__)).parent / "_photo_picker_component"
-_COMP_DIR.mkdir(exist_ok=True)
-(_COMP_DIR / "index.html").write_text("""<!DOCTYPE html>
-<html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { overflow: hidden; background: transparent; }
-.btn-row { display: flex; gap: 8px; padding: 4px 0; }
-button {
-    background: #1e3a8a; color: white;
-    border: 2px solid #3b82f6; border-radius: 8px;
-    padding: 6px 18px; font-size: 0.9rem;
-    cursor: pointer; height: 38px; white-space: nowrap;
-}
-button:active { background: #1d4ed8; border-color: #60a5fa; }
-.caption { font-size: 0.72rem; color: #888; margin-top: 4px; }
-</style>
-</head>
-<body>
-<div class="btn-row">
-  <button id="photoBtn">&#x1F5BC;&#xFE0F; Photo</button>
-  <button id="cameraBtn">&#x1F4F7; Camera</button>
-</div>
-<p class="caption">&#x1F5BC;&#xFE0F; Attaches to next message &nbsp;&bull;&nbsp; &#x1F4F7; Auto-sends</p>
-<input type="file" id="photoInput" accept="image/*" style="display:none">
-<input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none">
-<script>
-(function () {
-  function send(msg) {
-    msg.isStreamlitMessage = true;
-    window.parent.postMessage(msg, "*");
-  }
-  send({ type: "streamlit:componentReady", apiVersion: 1 });
-  function fixHeight() {
-    send({ type: "streamlit:setFrameHeight", height: document.body.scrollHeight + 10 });
-  }
-  setTimeout(fixHeight, 60);
-
-  function returnValue(val) {
-    send({ type: "streamlit:setComponentValue", value: val, dataType: "json" });
-  }
-
-  document.getElementById("photoBtn").onclick = function () {
-    document.getElementById("photoInput").value = "";
-    document.getElementById("photoInput").click();
-  };
-  document.getElementById("cameraBtn").onclick = function () {
-    document.getElementById("cameraInput").value = "";
-    document.getElementById("cameraInput").click();
-  };
-
-  function readFile(file, type) {
-    var reader = new FileReader();
-    reader.onload = function (e) {
-      returnValue({ t: type, d: e.target.result.split(",")[1], m: file.type });
-    };
-    reader.readAsDataURL(file);
-  }
-
-  document.getElementById("photoInput").onchange = function () {
-    if (this.files[0]) readFile(this.files[0], "photo");
-  };
-  document.getElementById("cameraInput").onchange = function () {
-    if (this.files[0]) readFile(this.files[0], "camera");
-  };
-})();
-</script>
-</body>
-</html>
-""")
-_photo_picker = components.declare_component("photo_picker", path=str(_COMP_DIR))
 
 def get_groq_client():
     if "active_key_index" not in st.session_state:
@@ -90,14 +16,17 @@ def get_groq_client():
     key_name = f"GROQ_API_KEY_{st.session_state.active_key_index}"
     return Groq(api_key=st.secrets[key_name])
 
+
 def switch_api_key():
     if "GROQ_API_KEY_2" in st.secrets and st.session_state.active_key_index == 1:
         st.session_state.active_key_index = 2
     elif "GROQ_API_KEY_1" in st.secrets and st.session_state.active_key_index == 2:
         st.session_state.active_key_index = 1
 
+
 if "active_key_index" not in st.session_state:
     st.session_state.active_key_index = 1
+
 
 def init_token_tracking():
     if "key_usage" not in st.session_state:
@@ -111,15 +40,18 @@ def init_token_tracking():
                 st.session_state.key_usage[idx]["tokens_today"] = 0
                 st.session_state.key_usage[idx]["last_reset"] = today
 
+
 def get_daily_limit_for_model(model):
     if "llama-4-scout" in model:
         return 500_000
     return 100_000
 
+
 def get_time_until_reset():
     now = datetime.utcnow()
     midnight = datetime(now.year, now.month, now.day, 0, 0, 0) + timedelta(days=1)
     return midnight - now
+
 
 init_token_tracking()
 
@@ -225,8 +157,6 @@ st.markdown("""
     <style>
     footer { visibility: hidden; }
     .stDeployButton { display: none; }
-
-    /* Lightbox */
     .lightbox {
         display: none; position: fixed; z-index: 9999;
         left: 0; top: 0; width: 100vw; height: 100vh;
@@ -380,8 +310,10 @@ TRANSLATIONS = {
 if "app_lang" not in st.session_state:
     st.session_state.app_lang = "English"
 
+
 def on_lang_change():
     st.session_state.app_lang = st.session_state.lang_selector
+
 
 if "native_key" not in st.session_state:
     st.session_state.native_key = None
@@ -442,10 +374,12 @@ if "current_device_key" not in st.session_state or st.session_state.current_devi
         st.session_state.all_chats = {"Chat 1": []}
     st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
 
+
 def save_chats():
     if "all_chats" in st.session_state and device_key:
         with open(file_name, "w", encoding="utf-8") as f:
             json.dump(st.session_state.all_chats, f, ensure_ascii=False)
+
 
 if "current_chat" not in st.session_state or st.session_state.current_chat not in st.session_state.all_chats:
     st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
@@ -455,6 +389,8 @@ if "editing_chat_name" not in st.session_state:
     st.session_state.editing_chat_name = None
 if "captured_image" not in st.session_state:
     st.session_state.captured_image = None
+if "captured_mime" not in st.session_state:
+    st.session_state.captured_mime = None
 if "last_upload_hash" not in st.session_state:
     st.session_state.last_upload_hash = None
 if "last_camera_hash" not in st.session_state:
@@ -478,6 +414,10 @@ with st.sidebar:
         new_name = f"{default_prefix} {len(st.session_state.all_chats) + 1}"
         st.session_state.all_chats[new_name] = []
         st.session_state.current_chat = new_name
+        st.session_state.captured_image = None
+        st.session_state.captured_mime = None
+        st.session_state.last_upload_hash = None
+        st.session_state.last_camera_hash = None
         save_chats()
         st.rerun()
 
@@ -503,6 +443,10 @@ with st.sidebar:
                 if st.button(chat_name, key=f"select_{chat_name}", use_container_width=True):
                     st.session_state.current_chat = chat_name
                     st.session_state.edit_index = None
+                    st.session_state.captured_image = None
+                    st.session_state.captured_mime = None
+                    st.session_state.last_upload_hash = None
+                    st.session_state.last_camera_hash = None
                     save_chats()
                     st.rerun()
             with col_edit:
@@ -592,14 +536,12 @@ for i, message in enumerate(messages):
                             elif item["type"] == "image_url":
                                 img_url = item["image_url"]["url"]
                                 uid = f"img_{i}"
-                                st.markdown(f'''
-                                <a href="#{uid}">
-                                    <img src="{img_url}" width="150" style="border-radius:10px;">
-                                </a>
-                                <a href="#!" id="{uid}" class="lightbox" title="Tap to close">
-                                    <div class="close-btn">&times;</div>
-                                    <img src="{img_url}">
-                                </a>''', unsafe_allow_html=True)
+                                st.markdown(
+                                    f'<a href="#{uid}"><img src="{img_url}" width="150" style="border-radius:10px;"></a>'
+                                    f'<a href="#!" id="{uid}" class="lightbox" title="Tap to close">'
+                                    f'<div class="close-btn">&times;</div><img src="{img_url}"></a>',
+                                    unsafe_allow_html=True
+                                )
                     else:
                         st.markdown(content)
     else:
@@ -608,33 +550,37 @@ for i, message in enumerate(messages):
             if "meta" in message:
                 meta = message["meta"]
                 st.caption(f"⏱️ {meta['response_time']:.2f}s  |  🕒 {meta['timestamp']}  |  ⚡ {meta['tokens_per_sec']:.1f} tok/s  |  🔢 {meta['total_tokens']} tokens")
-
-picker_result = _photo_picker(key="photo_picker_widget", default=None)
-
-if picker_result and isinstance(picker_result, dict):
-    img_b64 = picker_result.get("d", "")
-    img_type = picker_result.get("t", "photo")
-    img_hash = hashlib.md5(img_b64.encode()).hexdigest() if img_b64 else None
-
-    if img_hash and img_type == "camera":
-        if st.session_state.last_camera_hash != img_hash:
-            st.session_state.last_camera_hash = img_hash
-            msg_content = [
-                {"type": "text", "text": ui["photo_sent"]},
-                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}},
-            ]
-            st.session_state.all_chats[st.session_state.current_chat].append(
-                {"role": "user", "content": msg_content}
-            )
-            st.session_state.api_switch_attempts = 0
-            save_chats()
-            st.rerun()
-
-    elif img_hash and img_type == "photo":
-        if st.session_state.last_upload_hash != img_hash:
-            st.session_state.last_upload_hash = img_hash
-            st.session_state.captured_image = img_b64
-            st.rerun()
+with st.expander("📎 Attach Photo", expanded=False):
+    photo_tab, camera_tab = st.tabs(["📁 Gallery", "📷 Camera"])
+    with photo_tab:
+        uploaded_file = st.file_uploader(
+            "Choose a photo",
+            type=["jpg", "jpeg", "png", "webp", "gif"],
+            key=f"file_uploader_{st.session_state.current_chat}"
+        )
+        if uploaded_file is not None:
+            file_bytes = uploaded_file.getvalue()
+            img_b64 = base64.b64encode(file_bytes).decode("utf-8")
+            img_hash = hashlib.md5(file_bytes).hexdigest()
+            if st.session_state.last_upload_hash != img_hash:
+                st.session_state.last_upload_hash = img_hash
+                st.session_state.captured_image = img_b64
+                st.session_state.captured_mime = uploaded_file.type
+                st.rerun()
+    with camera_tab:
+        camera_photo = st.camera_input(
+            "Take a photo",
+            key=f"camera_{st.session_state.current_chat}"
+        )
+        if camera_photo is not None:
+            file_bytes = camera_photo.getvalue()
+            img_b64 = base64.b64encode(file_bytes).decode("utf-8")
+            img_hash = hashlib.md5(file_bytes).hexdigest()
+            if st.session_state.last_camera_hash != img_hash:
+                st.session_state.last_camera_hash = img_hash
+                st.session_state.captured_image = img_b64
+                st.session_state.captured_mime = "image/jpeg"
+                st.rerun()
 
 if st.session_state.captured_image:
     pcol1, pcol2 = st.columns([0.15, 0.85])
@@ -644,19 +590,24 @@ if st.session_state.captured_image:
         st.caption("📎 Image attached — type a message and send")
         if st.button("✖ Remove", key="clear_img"):
             st.session_state.captured_image = None
+            st.session_state.captured_mime = None
             st.session_state.last_upload_hash = None
+            st.session_state.last_camera_hash = None
             st.rerun()
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(ui["phrases"])
     st.session_state.api_switch_attempts = 0
     if st.session_state.captured_image:
+        mime = st.session_state.get("captured_mime") or "image/jpeg"
         msg_content = [
             {"type": "text", "text": prompt},
-            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{st.session_state.captured_image}"}},
+            {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{st.session_state.captured_image}"}},
         ]
         st.session_state.captured_image = None
+        st.session_state.captured_mime = None
         st.session_state.last_upload_hash = None
+        st.session_state.last_camera_hash = None
     else:
         msg_content = prompt
     st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
