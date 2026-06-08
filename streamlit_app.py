@@ -147,14 +147,6 @@ elif st.session_state.native_key:
 else:
     device_key = None
 
-if "cam_img" in st.query_params:
-    cam_img_b64 = st.query_params["cam_img"]
-    cam_msg_text = st.query_params.get("cam_msg", "")
-    st.session_state["_pending_cam_img"] = cam_img_b64
-    st.session_state["_pending_cam_msg"] = cam_msg_text
-    st.query_params.pop("cam_img", None)
-    st.query_params.pop("cam_msg", None)
-
 ui = TRANSLATIONS[st.session_state.app_lang]
 
 if not device_key:
@@ -371,7 +363,7 @@ for i, message in enumerate(messages):
 with st.expander("📎 Attach", expanded=False):
     attach_mode = st.radio("", ["🖼 Gallery", "📷 Camera", "📂 File"], horizontal=True, key=f"attach_mode_{st.session_state.current_chat}")
     if attach_mode == "🖼 Gallery":
-        uploaded_file = st.file_uploader("Choose a photo", type=["jpg", "jpeg", "png", "webp", "gif"], key=f"gallery_uploader_{st.session_state.current_chat}")
+        uploaded_file = st.file_uploader("Choose a photo", type=["image/jpeg", "image/png", "image/webp", "image/gif"], key=f"gallery_uploader_{st.session_state.current_chat}")
         if uploaded_file is not None:
             file_bytes = uploaded_file.getvalue()
             img_b64 = base64.b64encode(file_bytes).decode("utf-8")
@@ -384,51 +376,16 @@ with st.expander("📎 Attach", expanded=False):
                 save_chats()
                 st.rerun()
     elif attach_mode == "📷 Camera":
-        cam_key = f"cam_active_{st.session_state.current_chat}"
-        if cam_key not in st.session_state:
-            st.session_state[cam_key] = False
-        if not st.session_state[cam_key]:
-            if st.button("📷 Start Camera", key=f"start_cam_{st.session_state.current_chat}"):
-                st.session_state[cam_key] = True
-                st.rerun()
-        else:
-            cam_html = """
-            <div style="text-align:center;max-width:360px;margin:0 auto;">
-                <div style="position:relative;width:100%;padding-bottom:56.25%;background:#000;border-radius:8px;overflow:hidden;">
-                    <video id="cam_vid" autoplay playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;"></video>
-                </div>
-                <canvas id="cam_canvas" style="display:none;"></canvas>
-                <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
-                    <button id="cam_flip" style="padding:6px 12px;font-size:13px;border-radius:6px;border:none;background:#607d8b;color:#fff;cursor:pointer;">🔄 Switch</button>
-                    <button id="cam_snap" style="padding:8px 20px;font-size:14px;border-radius:50%;border:2px solid #fff;background:#ff4081;color:#fff;cursor:pointer;width:48px;height:48px;display:flex;align-items:center;justify-content:center;">📸</button>
-                </div>
-                <img id="cam_preview" style="width:100px;border-radius:8px;display:none;margin:8px auto 0;"/>
-                <div id="cam_controls" style="display:none;margin-top:8px;">
-                    <input type="text" id="cam_msg" placeholder="Add a message (optional)" style="width:100%;max-width:340px;padding:6px;border-radius:6px;border:1px solid #555;background:#1a1a1a;color:#fff;font-size:13px;">
-                    <div style="display:flex;gap:8px;justify-content:center;margin-top:8px;">
-                        <button id="cam_send" style="padding:8px 18px;font-size:14px;border-radius:6px;border:none;background:#4caf50;color:#fff;cursor:pointer;">📤 Send</button>
-                        <button id="cam_retake" style="padding:8px 18px;font-size:14px;border-radius:6px;border:none;background:#ff9800;color:#fff;cursor:pointer;">🔄 Retake</button>
-                    </div>
-                </div>
-                <p id="cam_err" style="color:#f55;display:none;font-size:13px;margin-top:6px;"></p>
-            </div>
-            <script>
-            (function(){
-                const v=document.getElementById('cam_vid'),c=document.getElementById('cam_canvas'),p=document.getElementById('cam_preview'),snap=document.getElementById('cam_snap'),send=document.getElementById('cam_send'),retake=document.getElementById('cam_retake'),flip=document.getElementById('cam_flip'),ctrls=document.getElementById('cam_controls'),msg=document.getElementById('cam_msg'),err=document.getElementById('cam_err');
-                let stream=null,imgData='',facing='environment';
-                function startCam(){if(stream){stream.getTracks().forEach(function(t){t.stop();});}
-                navigator.mediaDevices.getUserMedia({video:{facingMode:facing},audio:false}).then(function(s){stream=s;v.srcObject=stream;err.style.display='none';}).catch(function(e){err.textContent='Camera unavailable: '+e.message;err.style.display='block';v.parentElement.style.display='none';snap.style.display='none';flip.style.display='none';});}
-                startCam();
-                flip.onclick=function(){facing=(facing==='environment'?'user':'environment');startCam();};
-                snap.onclick=function(){if(!stream)return;c.width=v.videoWidth||640;c.height=v.videoHeight||480;c.getContext('2d').drawImage(v,0,0);imgData=c.toDataURL('image/jpeg',0.92);p.src=imgData;p.style.display='block';v.parentElement.style.display='none';snap.parentElement.style.display='none';ctrls.style.display='block';if(stream){stream.getTracks().forEach(function(t){t.stop();});stream=null;}};
-                retake.onclick=function(){p.style.display='none';v.parentElement.style.display='block';snap.parentElement.style.display='flex';ctrls.style.display='none';msg.value='';startCam();};
-                send.onclick=function(){const base64=imgData.split(',')[1];const text=encodeURIComponent(msg.value||'');const url=new URL(window.parent.location.href);url.searchParams.set('cam_img',base64);url.searchParams.set('cam_msg',text);window.parent.location.href=url.toString();};
-            })();
-            </script>
-            """
-            components.html(cam_html, height=320)
-            if st.button("❌ Close Camera", key=f"close_cam_{st.session_state.current_chat}"):
-                st.session_state[cam_key] = False
+        cam_image = st.camera_input("Take a photo", key=f"cam_input_{st.session_state.current_chat}")
+        if cam_image is not None:
+            file_bytes = cam_image.getvalue()
+            img_b64 = base64.b64encode(file_bytes).decode("utf-8")
+            st.image(base64.b64decode(img_b64), width=120)
+            photo_prompt = st.text_input("Add a message (optional):", key=f"cam_prompt_{st.session_state.current_chat}")
+            if st.button("📤 Send Photo", key=f"send_cam_{st.session_state.current_chat}"):
+                msg_content = [{"type": "text", "text": photo_prompt if photo_prompt else ui["photo_sent"]}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}]
+                st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+                save_chats()
                 st.rerun()
     elif attach_mode == "📂 File":
         uploaded_file = st.file_uploader("Choose a file", key=f"file_uploader_{st.session_state.current_chat}")
@@ -450,14 +407,6 @@ with st.expander("📎 Attach", expanded=False):
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_text})
                 save_chats()
                 st.rerun()
-
-if "_pending_cam_img" in st.session_state and device_key:
-    img_b64 = st.session_state.pop("_pending_cam_img")
-    msg_text = st.session_state.pop("_pending_cam_msg", "") or ui["photo_sent"]
-    msg_content = [{"type": "text", "text": msg_text}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}]
-    st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
-    save_chats()
-    st.rerun()
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(ui["phrases"])
