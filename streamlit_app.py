@@ -375,17 +375,32 @@ with st.expander("📎 Attach", expanded=False):
                 save_chats()
                 st.rerun()
     elif attach_mode == "📷 Camera":
-        camera_photo = st.camera_input("Take a photo", key=f"camera_{st.session_state.current_chat}")
-        if camera_photo is not None:
-            file_bytes = camera_photo.getvalue()
-            img_b64 = base64.b64encode(file_bytes).decode("utf-8")
-            st.image(base64.b64decode(img_b64), width=120)
-            camera_prompt = st.text_input("Add a message (optional):", key=f"camera_prompt_{st.session_state.current_chat}")
-            if st.button("📤 Send Photo", key=f"send_camera_{st.session_state.current_chat}"):
-                msg_content = [{"type": "text", "text": camera_prompt if camera_prompt else ui["photo_sent"]}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}]
-                st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
-                save_chats()
+        cam_key = f"camera_open_{st.session_state.current_chat}"
+        if cam_key not in st.session_state:
+            st.session_state[cam_key] = False
+        if not st.session_state[cam_key]:
+            if st.button("📷 Open Camera", key=f"open_cam_{st.session_state.current_chat}"):
+                st.session_state[cam_key] = True
                 st.rerun()
+        else:
+            camera_photo = st.camera_input("Take a photo", key=f"camera_{st.session_state.current_chat}")
+            if camera_photo is not None:
+                file_bytes = camera_photo.getvalue()
+                img_b64 = base64.b64encode(file_bytes).decode("utf-8")
+                st.image(base64.b64decode(img_b64), width=120)
+                camera_prompt = st.text_input("Add a message (optional):", key=f"camera_prompt_{st.session_state.current_chat}")
+                col_send, col_cancel = st.columns(2)
+                with col_send:
+                    if st.button("📤 Send Photo", key=f"send_camera_{st.session_state.current_chat}"):
+                        msg_content = [{"type": "text", "text": camera_prompt if camera_prompt else ui["photo_sent"]}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}]
+                        st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+                        st.session_state[cam_key] = False
+                        save_chats()
+                        st.rerun()
+                with col_cancel:
+                    if st.button("❌ Cancel", key=f"cancel_cam_{st.session_state.current_chat}"):
+                        st.session_state[cam_key] = False
+                        st.rerun()
     elif attach_mode == "📂 File":
         uploaded_file = st.file_uploader("Choose a file", key=f"file_uploader_{st.session_state.current_chat}")
         if uploaded_file is not None:
