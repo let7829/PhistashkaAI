@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import json
 import os
 import time
-import urllib.parse
+
 
 def get_groq_client():
     if "active_key_index" not in st.session_state:
@@ -16,12 +16,14 @@ def get_groq_client():
     key_name = f"GROQ_API_KEY_{st.session_state.active_key_index}"
     return Groq(api_key=st.secrets[key_name])
 
+
 def get_available_key_indices():
     available = []
     for i in range(1, 6):
         if f"GROQ_API_KEY_{i}" in st.secrets:
             available.append(i)
     return available if available else [1]
+
 
 def switch_api_key():
     available = get_available_key_indices()
@@ -35,8 +37,10 @@ def switch_api_key():
     else:
         st.session_state.active_key_index = available[0]
 
+
 if "active_key_index" not in st.session_state:
     st.session_state.active_key_index = 1
+
 
 def init_token_tracking():
     if "key_usage" not in st.session_state:
@@ -50,15 +54,18 @@ def init_token_tracking():
                 st.session_state.key_usage[idx]["tokens_today"] = 0
                 st.session_state.key_usage[idx]["last_reset"] = today
 
+
 def get_daily_limit_for_model(model):
     if "llama-4-scout" in model:
         return 500_000
     return 100_000
 
+
 def get_time_until_reset():
     now = datetime.utcnow()
     midnight = datetime(now.year, now.month, now.day, 0, 0, 0) + timedelta(days=1)
     return midnight - now
+
 
 init_token_tracking()
 
@@ -123,8 +130,10 @@ TRANSLATIONS = {
 if "app_lang" not in st.session_state:
     st.session_state.app_lang = "English"
 
+
 def on_lang_change():
     st.session_state.app_lang = st.session_state.lang_selector
+
 
 if "native_key" not in st.session_state:
     st.session_state.native_key = None
@@ -201,10 +210,12 @@ else:
     if "current_chat" not in st.session_state or st.session_state.current_chat not in st.session_state.all_chats:
         st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
 
+
 def save_chats():
     if "all_chats" in st.session_state and device_key:
         with open(file_name, "w", encoding="utf-8") as f:
             json.dump(st.session_state.all_chats, f, ensure_ascii=False)
+
 
 if "edit_index" not in st.session_state:
     st.session_state.edit_index = None
@@ -349,161 +360,53 @@ for i, message in enumerate(messages):
                 meta = message["meta"]
                 st.caption(f"⏱️ {meta['response_time']:.2f}s  |  🕒 {meta['timestamp']}  |  ⚡ {meta['tokens_per_sec']:.1f} tok/s  |  🔢 {meta['total_tokens']} tokens")
 
-# ==================== FIXED ATTACH SECTION (No Android file picker) ====================
 with st.expander("📎 Attach", expanded=False):
-    attach_mode = st.radio("", ["🖼 Gallery", "📷 Camera"], horizontal=True, key=f"attach_mode_{st.session_state.current_chat}")
-    
+    attach_mode = st.radio("", ["🖼 Gallery", "📷 Camera", "📂 File"], horizontal=True, key=f"attach_mode_{st.session_state.current_chat}")
     if attach_mode == "🖼 Gallery":
-        st.markdown("""
-        <div style="text-align:center; margin:10px 0;">
-            <input type="file" id="gallery_input" accept="image/*" style="display:none" />
-            <button id="gallery_button" style="padding:8px 16px; background:#4CAF50; color:white; border:none; border-radius:8px; cursor:pointer;">📁 Choose from Gallery</button>
-            <div id="gallery_preview" style="margin-top:10px;"></div>
-            <input type="text" id="gallery_msg" placeholder="Add a message (optional)" style="margin-top:10px; width:100%; padding:8px; border-radius:6px; border:1px solid #555; background:#1a1a1a; color:#fff; display:none;" />
-            <button id="gallery_send" style="display:none; margin-top:10px; padding:8px 16px; background:#2196F3; color:white; border:none; border-radius:8px; cursor:pointer;">📤 Send Photo</button>
-        </div>
-        <script>
-        (function(){
-            const fileInput = document.getElementById('gallery_input');
-            const galleryBtn = document.getElementById('gallery_button');
-            const previewDiv = document.getElementById('gallery_preview');
-            const msgInput = document.getElementById('gallery_msg');
-            const sendBtn = document.getElementById('gallery_send');
-            let currentBase64 = null;
-            galleryBtn.onclick = () => fileInput.click();
-            fileInput.onchange = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    currentBase64 = event.target.result.split(',')[1];
-                    previewDiv.innerHTML = `<img src="${event.target.result}" width="120" style="border-radius:8px;">`;
-                    msgInput.style.display = 'block';
-                    sendBtn.style.display = 'inline-block';
-                };
-                reader.readAsDataURL(file);
-            };
-            sendBtn.onclick = () => {
-                if (currentBase64) {
-                    const msg = encodeURIComponent(msgInput.value);
-                    const url = new URL(window.parent.location.href);
-                    url.searchParams.set('gallery_img', currentBase64);
-                    url.searchParams.set('gallery_msg', msg);
-                    window.parent.location.href = url.toString();
-                }
-            };
-        })();
-        </script>
-        """, unsafe_allow_html=True)
-        
-        qp_gallery = st.query_params.get("gallery_img")
-        if qp_gallery:
-            msg_text = st.query_params.get("gallery_msg", "")
-            if msg_text:
-                msg_text = urllib.parse.unquote(msg_text)
-            else:
-                msg_text = ui["photo_sent"]
-            msg_content = [{"type": "text", "text": msg_text}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{qp_gallery}"}}]
-            st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
-            st.query_params.pop("gallery_img", None)
-            st.query_params.pop("gallery_msg", None)
-            save_chats()
-            st.rerun()
-    
+        uploaded_file = st.file_uploader("Choose a photo", type=["image/jpeg", "image/png", "image/webp", "image/gif"], key=f"gallery_uploader_{st.session_state.current_chat}")
+        if uploaded_file is not None:
+            file_bytes = uploaded_file.getvalue()
+            mime = uploaded_file.type or "image/jpeg"
+            st.image(file_bytes, width=120)
+            img_b64 = base64.b64encode(file_bytes).decode("utf-8")
+            photo_prompt = st.text_input("Add a message (optional):", key=f"photo_prompt_{st.session_state.current_chat}")
+            if st.button("📤 Send Photo", key=f"send_photo_{st.session_state.current_chat}"):
+                msg_content = [{"type": "text", "text": photo_prompt if photo_prompt else ui["photo_sent"]}, {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_b64}"}}]
+                st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+                save_chats()
+                st.rerun()
     elif attach_mode == "📷 Camera":
-        st.markdown("""
-        <div style="text-align:center; max-width:420px; margin:0 auto;">
-            <div style="position:relative; width:100%; padding-bottom:75%; background:#000; border-radius:10px; overflow:hidden;">
-                <video id="cam_vid" autoplay playsinline style="position:absolute; top:0; left:0; width:100%; height:100%; object-fit:cover;"></video>
-            </div>
-            <canvas id="cam_canvas" style="display:none;"></canvas>
-            <div style="margin:10px 0;">
-                <button id="cam_flip" style="padding:6px 12px; background:#607d8b; color:#fff; border:none; border-radius:6px; cursor:pointer;">🔄 Switch</button>
-                <button id="cam_snap" style="padding:10px 28px; font-size:18px; border-radius:50%; border:3px solid #fff; background:#ff4081; color:#fff; cursor:pointer; margin:0 10px;">📸</button>
-            </div>
-            <img id="cam_preview" style="width:120px; border-radius:10px; display:none; margin:10px auto;" />
-            <div id="cam_controls" style="display:none;">
-                <input type="text" id="cam_msg" placeholder="Add a message (optional)" style="width:100%; padding:8px; border-radius:6px; border:1px solid #555; background:#1a1a1a; color:#fff;">
-                <div style="margin-top:10px;">
-                    <button id="cam_send" style="padding:8px 16px; background:#4caf50; color:#fff; border:none; border-radius:8px; cursor:pointer;">📤 Send</button>
-                    <button id="cam_retake" style="padding:8px 16px; background:#ff9800; color:#fff; border:none; border-radius:8px; cursor:pointer;">🔄 Retake</button>
-                </div>
-            </div>
-        </div>
-        <script>
-        (function(){
-            const v = document.getElementById('cam_vid');
-            const c = document.getElementById('cam_canvas');
-            const snap = document.getElementById('cam_snap');
-            const flip = document.getElementById('cam_flip');
-            const preview = document.getElementById('cam_preview');
-            const controls = document.getElementById('cam_controls');
-            const msgInput = document.getElementById('cam_msg');
-            const sendBtn = document.getElementById('cam_send');
-            const retakeBtn = document.getElementById('cam_retake');
-            let stream = null;
-            let facing = 'environment';
-            let imgData = null;
-            function startCam() {
-                if (stream) stream.getTracks().forEach(t => t.stop());
-                navigator.mediaDevices.getUserMedia({ video: { facingMode: facing } })
-                    .then(s => { stream = s; v.srcObject = s; })
-                    .catch(e => alert('Camera error: '+e.message));
-            }
-            startCam();
-            flip.onclick = () => { facing = (facing === 'environment' ? 'user' : 'environment'); startCam(); };
-            snap.onclick = () => {
-                if (!stream) return;
-                c.width = v.videoWidth || 640;
-                c.height = v.videoHeight || 480;
-                c.getContext('2d').drawImage(v, 0, 0);
-                imgData = c.toDataURL('image/jpeg', 0.92);
-                preview.src = imgData;
-                preview.style.display = 'block';
-                v.parentElement.style.display = 'none';
-                snap.parentElement.style.display = 'none';
-                flip.style.display = 'none';
-                controls.style.display = 'block';
-                if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-            };
-            retakeBtn.onclick = () => {
-                preview.style.display = 'none';
-                v.parentElement.style.display = 'block';
-                snap.parentElement.style.display = 'inline-block';
-                flip.style.display = 'inline-block';
-                controls.style.display = 'none';
-                msgInput.value = '';
-                startCam();
-            };
-            sendBtn.onclick = () => {
-                if (imgData) {
-                    const base64 = imgData.split(',')[1];
-                    const msg = encodeURIComponent(msgInput.value);
-                    const url = new URL(window.parent.location.href);
-                    url.searchParams.set('cam_img', base64);
-                    url.searchParams.set('cam_msg', msg);
-                    window.parent.location.href = url.toString();
-                }
-            };
-        })();
-        </script>
-        """, unsafe_allow_html=True)
-        
-        qp_cam = st.query_params.get("cam_img")
-        if qp_cam:
-            msg_text = st.query_params.get("cam_msg", "")
-            if msg_text:
-                msg_text = urllib.parse.unquote(msg_text)
-            else:
-                msg_text = ui["photo_sent"]
-            msg_content = [{"type": "text", "text": msg_text}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{qp_cam}"}}]
-            st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
-            st.query_params.pop("cam_img", None)
-            st.query_params.pop("cam_msg", None)
-            save_chats()
-            st.rerun()
-
-# ==================== END OF ATTACH SECTION ====================
+        cam_image = st.camera_input("Take a photo", key=f"cam_input_{st.session_state.current_chat}")
+        if cam_image is not None:
+            file_bytes = cam_image.getvalue()
+            st.image(file_bytes, width=120)
+            img_b64 = base64.b64encode(file_bytes).decode("utf-8")
+            photo_prompt = st.text_input("Add a message (optional):", key=f"cam_prompt_{st.session_state.current_chat}")
+            if st.button("📤 Send Photo", key=f"send_cam_{st.session_state.current_chat}"):
+                msg_content = [{"type": "text", "text": photo_prompt if photo_prompt else ui["photo_sent"]}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}]
+                st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+                save_chats()
+                st.rerun()
+    elif attach_mode == "📂 File":
+        uploaded_file = st.file_uploader("Choose a file", key=f"file_uploader_{st.session_state.current_chat}")
+        if uploaded_file is not None:
+            file_bytes = uploaded_file.getvalue()
+            file_name_up = uploaded_file.name
+            mime = uploaded_file.type or "application/octet-stream"
+            st.write(f"**{file_name_up}**  |  `{len(file_bytes):,} bytes`")
+            file_prompt = st.text_input("Add a message (optional):", key=f"file_prompt_{st.session_state.current_chat}")
+            if st.button("📤 Send File", key=f"send_file_{st.session_state.current_chat}"):
+                text_content = ""
+                try:
+                    text_content = file_bytes.decode("utf-8")
+                except Exception:
+                    text_content = "[Binary file content not displayed]"
+                msg_text = f"📎 Attached file: **{file_name_up}**\n\n{text_content[:3000]}"
+                if file_prompt:
+                    msg_text = f"{file_prompt}\n\n{msg_text}"
+                st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_text})
+                save_chats()
+                st.rerun()
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(ui["phrases"])
