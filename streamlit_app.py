@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 import json
 import os
 import time
+import urllib.parse
 
 
 def get_groq_client():
@@ -376,17 +377,68 @@ with st.expander("📎 Attach", expanded=False):
                 save_chats()
                 st.rerun()
     elif attach_mode == "📷 Camera":
-        cam_image = st.camera_input("Take a photo", key=f"cam_input_{st.session_state.current_chat}")
-        if cam_image is not None:
-            file_bytes = cam_image.getvalue()
-            st.image(file_bytes, width=120)
-            img_b64 = base64.b64encode(file_bytes).decode("utf-8")
-            photo_prompt = st.text_input("Add a message (optional):", key=f"cam_prompt_{st.session_state.current_chat}")
-            if st.button("📤 Send Photo", key=f"send_cam_{st.session_state.current_chat}"):
-                msg_content = [{"type": "text", "text": photo_prompt if photo_prompt else ui["photo_sent"]}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}]
-                st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
-                save_chats()
-                st.rerun()
+        st.markdown("""
+        <div style="text-align:center; margin:10px 0;">
+            <div style="position:relative; width:100%; max-width:400px; margin:0 auto; background:#000; border-radius:12px; overflow:hidden;">
+                <video id="cam_video" autoplay playsinline style="width:100%; height:auto;"></video>
+            </div>
+            <canvas id="cam_canvas" style="display:none;"></canvas>
+            <br>
+            <button id="cam_snap" style="padding:8px 20px; background:#ff4081; color:white; border:none; border-radius:8px;">📸 Take Photo</button>
+            <div id="cam_preview" style="margin-top:10px;"></div>
+            <input type="text" id="cam_msg" placeholder="Add a message (optional)" style="margin-top:10px; width:100%; max-width:400px; padding:8px; border-radius:6px; border:1px solid #555; background:#1a1a1a; color:#fff; display:none;">
+            <button id="cam_send" style="display:none; margin-top:10px; padding:8px 16px; background:#4caf50; color:white; border:none; border-radius:8px;">📤 Send</button>
+        </div>
+        <script>
+        (function(){
+            const video = document.getElementById('cam_video');
+            const canvas = document.getElementById('cam_canvas');
+            const snapBtn = document.getElementById('cam_snap');
+            const previewDiv = document.getElementById('cam_preview');
+            const msgInput = document.getElementById('cam_msg');
+            const sendBtn = document.getElementById('cam_send');
+            let stream = null;
+            let currentBase64 = null;
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(s => { stream = s; video.srcObject = s; })
+                .catch(e => alert('Camera error: ' + e.message));
+            snapBtn.onclick = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                currentBase64 = dataUrl.split(',')[1];
+                previewDiv.innerHTML = `<img src="${dataUrl}" width="120" style="border-radius:8px;">`;
+                msgInput.style.display = 'block';
+                sendBtn.style.display = 'inline-block';
+                if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+            };
+            sendBtn.onclick = () => {
+                if (currentBase64) {
+                    const msg = encodeURIComponent(msgInput.value);
+                    const url = new URL(window.parent.location.href);
+                    url.searchParams.set('cam_base64', currentBase64);
+                    url.searchParams.set('cam_msg', msg);
+                    window.parent.location.href = url.toString();
+                }
+            };
+        })();
+        </script>
+        """, unsafe_allow_html=True)
+        
+        cam_base64 = st.query_params.get("cam_base64")
+        if cam_base64:
+            msg_text = st.query_params.get("cam_msg", "")
+            if msg_text:
+                msg_text = urllib.parse.unquote(msg_text)
+            else:
+                msg_text = ui["photo_sent"]
+            msg_content = [{"type": "text", "text": msg_text}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{cam_base64}"}}]
+            st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+            st.query_params.pop("cam_base64", None)
+            st.query_params.pop("cam_msg", None)
+            save_chats()
+            st.rerun()
     elif attach_mode == "📂 File":
         uploaded_file = st.file_uploader("Choose a file", key=f"file_uploader_{st.session_state.current_chat}")
         if uploaded_file is not None:
