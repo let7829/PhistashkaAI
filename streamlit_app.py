@@ -379,32 +379,37 @@ with st.expander("📎 Attach", expanded=False):
     elif attach_mode == "📷 Camera":
         st.markdown("""
         <div style="text-align:center; margin:10px 0;">
-            <input type="file" id="camera_input" accept="image/*" capture style="display:none;" />
-            <button id="camera_button" style="padding:8px 20px; background:#ff4081; color:white; border:none; border-radius:8px; cursor:pointer;">📷 Take Photo</button>
-            <div id="camera_preview" style="margin-top:10px;"></div>
-            <input type="text" id="camera_msg" placeholder="Add a message (optional)" style="margin-top:10px; width:100%; max-width:400px; padding:8px; border-radius:6px; border:1px solid #555; background:#1a1a1a; color:#fff; display:none;">
-            <button id="camera_send" style="display:none; margin-top:10px; padding:8px 16px; background:#4caf50; color:white; border:none; border-radius:8px;">📤 Send</button>
+            <video id="cam_video" autoplay playsinline style="width:100%; max-width:400px; background:#000; border-radius:12px;"></video>
+            <canvas id="cam_canvas" style="display:none;"></canvas>
+            <br>
+            <button id="cam_snap" style="padding:8px 20px; background:#ff4081; color:white; border:none; border-radius:8px;">📸 Take Photo</button>
+            <div id="cam_preview" style="margin-top:10px;"></div>
+            <input type="text" id="cam_msg" placeholder="Add a message (optional)" style="margin-top:10px; width:100%; max-width:400px; padding:8px; border-radius:6px; border:1px solid #555; background:#1a1a1a; color:#fff; display:none;">
+            <button id="cam_send" style="display:none; margin-top:10px; padding:8px 16px; background:#4caf50; color:white; border:none; border-radius:8px;">📤 Send</button>
         </div>
         <script>
         (function(){
-            const fileInput = document.getElementById('camera_input');
-            const cameraBtn = document.getElementById('camera_button');
-            const previewDiv = document.getElementById('camera_preview');
-            const msgInput = document.getElementById('camera_msg');
-            const sendBtn = document.getElementById('camera_send');
+            const video = document.getElementById('cam_video');
+            const canvas = document.getElementById('cam_canvas');
+            const snapBtn = document.getElementById('cam_snap');
+            const previewDiv = document.getElementById('cam_preview');
+            const msgInput = document.getElementById('cam_msg');
+            const sendBtn = document.getElementById('cam_send');
+            let stream = null;
             let currentBase64 = null;
-            cameraBtn.onclick = () => fileInput.click();
-            fileInput.onchange = (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    currentBase64 = event.target.result.split(',')[1];
-                    previewDiv.innerHTML = `<img src="${event.target.result}" width="120" style="border-radius:8px;">`;
-                    msgInput.style.display = 'block';
-                    sendBtn.style.display = 'inline-block';
-                };
-                reader.readAsDataURL(file);
+            navigator.mediaDevices.getUserMedia({ video: true })
+                .then(s => { stream = s; video.srcObject = s; })
+                .catch(e => alert('Camera error: ' + e.message));
+            snapBtn.onclick = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                canvas.getContext('2d').drawImage(video, 0, 0);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+                currentBase64 = dataUrl.split(',')[1];
+                previewDiv.innerHTML = `<img src="${dataUrl}" width="120" style="border-radius:8px;">`;
+                msgInput.style.display = 'block';
+                sendBtn.style.display = 'inline-block';
+                if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
             };
             sendBtn.onclick = () => {
                 if (currentBase64) {
