@@ -143,6 +143,7 @@ if "key" in st.query_params:
     st.session_state.native_key = device_key
 elif st.session_state.native_key:
     device_key = st.session_state.native_key
+    st.query_params["key"] = device_key
 else:
     device_key = None
 
@@ -362,7 +363,41 @@ for i, message in enumerate(messages):
 with st.expander("📎 Attach", expanded=False):
     attach_mode = st.radio("", ["🖼 Gallery", "📷 Camera", "📂 File"], horizontal=True, key=f"attach_mode_{st.session_state.current_chat}")
     if attach_mode == "🖼 Gallery":
-        uploaded_file = st.file_uploader("Choose a photo", type=["jpg", "jpeg", "png", "webp", "gif"], key=f"gallery_uploader_{st.session_state.current_chat}")
+        st.markdown("""
+            <style>
+            .gallery-picker-wrapper { text-align: center; }
+            .gallery-picker-wrapper input[type="file"] { display: none; }
+            .gallery-picker-btn { padding: 12px 28px; font-size: 16px; border-radius: 10px; border: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; cursor: pointer; }
+            </style>
+            <div class="gallery-picker-wrapper">
+                <input type="file" accept="image/*" id="gallery_native_input">
+                <button class="gallery-picker-btn" onclick="document.getElementById('gallery_native_input').click()">📷 Open Photo Picker</button>
+            </div>
+            <script>
+            (function(){
+                const nativeInput = document.getElementById('gallery_native_input');
+                const observer = new MutationObserver(function(){
+                    const realInput = document.querySelector('input[data-testid="stFileUploader"][aria-label="Choose a photo"]');
+                    if(realInput && !nativeInput._hooked){
+                        nativeInput._hooked = true;
+                        nativeInput.addEventListener('change', function(e){
+                            const file = e.target.files[0];
+                            if(file){
+                                const dt = new DataTransfer();
+                                dt.items.add(file);
+                                realInput.files = dt.files;
+                                realInput.dispatchEvent(new Event('change', {bubbles: true}));
+                                const ev2 = new Event('input', {bubbles: true});
+                                realInput.dispatchEvent(ev2);
+                            }
+                        });
+                    }
+                });
+                observer.observe(document.body, {childList: true, subtree: true});
+            })();
+            </script>
+        """, unsafe_allow_html=True)
+        uploaded_file = st.file_uploader("Choose a photo", type=["jpg", "jpeg", "png", "webp", "gif"], key=f"gallery_uploader_{st.session_state.current_chat}", label_visibility="collapsed")
         if uploaded_file is not None:
             file_bytes = uploaded_file.getvalue()
             img_b64 = base64.b64encode(file_bytes).decode("utf-8")
@@ -397,7 +432,7 @@ with st.expander("📎 Attach", expanded=False):
         else:
             cam_html = """
             <div style="text-align:center;max-width:420px;margin:0 auto;">
-                <div style="position:relative;width:100%;padding-bottom:75%;background:#000;border-radius:10px;overflow:hidden;">
+                <div style="position:relative;width:100%;padding-bottom:56.25%;background:#000;border-radius:10px;overflow:hidden;">
                     <video id="cam_vid" autoplay playsinline style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;"></video>
                 </div>
                 <canvas id="cam_canvas" style="display:none;"></canvas>
@@ -433,7 +468,7 @@ with st.expander("📎 Attach", expanded=False):
             })();
             </script>
             """
-            components.html(cam_html, height=480)
+            components.html(cam_html, height=380)
             if st.button("❌ Close Camera", key=f"close_cam_{st.session_state.current_chat}"):
                 st.session_state[cam_key] = False
                 st.rerun()
