@@ -147,11 +147,9 @@ elif st.session_state.native_key:
 else:
     device_key = None
 
-# Handle camera photo send via query params
 if "cam_img" in st.query_params:
     cam_img_b64 = st.query_params["cam_img"]
     cam_msg_text = st.query_params.get("cam_msg", "")
-    # Store temporarily - will be processed after device_key is confirmed
     st.session_state["_pending_cam_img"] = cam_img_b64
     st.session_state["_pending_cam_msg"] = cam_msg_text
     st.query_params.pop("cam_img", None)
@@ -446,18 +444,13 @@ with st.expander("📎 Attach", expanded=False):
                     text_content = file_bytes.decode("utf-8")
                 except Exception:
                     text_content = "[Binary file content not displayed]"
-                msg_text = f"📎 Attached file: **{file_name_up}**
-
-{text_content[:3000]}"
+                msg_text = f"📎 Attached file: **{file_name_up}**\n\n{text_content[:3000]}"
                 if file_prompt:
-                    msg_text = f"{file_prompt}
-
-{msg_text}"
+                    msg_text = f"{file_prompt}\n\n{msg_text}"
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_text})
                 save_chats()
                 st.rerun()
 
-# Process pending camera image if any
 if "_pending_cam_img" in st.session_state and device_key:
     img_b64 = st.session_state.pop("_pending_cam_img")
     msg_text = st.session_state.pop("_pending_cam_msg", "") or ui["photo_sent"]
