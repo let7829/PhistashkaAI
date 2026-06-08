@@ -359,10 +359,10 @@ for i, message in enumerate(messages):
                 meta = message["meta"]
                 st.caption(f"⏱️ {meta['response_time']:.2f}s  |  🕒 {meta['timestamp']}  |  ⚡ {meta['tokens_per_sec']:.1f} tok/s  |  🔢 {meta['total_tokens']} tokens")
 
-with st.expander("📎 Attach Photo", expanded=False):
-    photo_tab, camera_tab = st.tabs(["📁 Gallery", "📷 Camera"])
-    with photo_tab:
-        uploaded_file = st.file_uploader("Choose a photo", type=["jpg", "jpeg", "png", "webp", "gif"], key=f"file_uploader_{st.session_state.current_chat}")
+with st.expander("📎 Attach", expanded=False):
+    attach_mode = st.radio("", ["🖼 Gallery", "📷 Camera", "📂 File"], horizontal=True, key=f"attach_mode_{st.session_state.current_chat}")
+    if attach_mode == "🖼 Gallery":
+        uploaded_file = st.file_uploader("Choose a photo", type=["jpg", "jpeg", "png", "webp", "gif"], key=f"gallery_uploader_{st.session_state.current_chat}")
         if uploaded_file is not None:
             file_bytes = uploaded_file.getvalue()
             img_b64 = base64.b64encode(file_bytes).decode("utf-8")
@@ -374,7 +374,7 @@ with st.expander("📎 Attach Photo", expanded=False):
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
                 save_chats()
                 st.rerun()
-    with camera_tab:
+    elif attach_mode == "📷 Camera":
         camera_photo = st.camera_input("Take a photo", key=f"camera_{st.session_state.current_chat}")
         if camera_photo is not None:
             file_bytes = camera_photo.getvalue()
@@ -384,6 +384,26 @@ with st.expander("📎 Attach Photo", expanded=False):
             if st.button("📤 Send Photo", key=f"send_camera_{st.session_state.current_chat}"):
                 msg_content = [{"type": "text", "text": camera_prompt if camera_prompt else ui["photo_sent"]}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}]
                 st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+                save_chats()
+                st.rerun()
+    elif attach_mode == "📂 File":
+        uploaded_file = st.file_uploader("Choose a file", key=f"file_uploader_{st.session_state.current_chat}")
+        if uploaded_file is not None:
+            file_bytes = uploaded_file.getvalue()
+            file_name_up = uploaded_file.name
+            mime = uploaded_file.type or "application/octet-stream"
+            st.write(f"**{file_name_up}**  |  `{len(file_bytes):,} bytes`")
+            file_prompt = st.text_input("Add a message (optional):", key=f"file_prompt_{st.session_state.current_chat}")
+            if st.button("📤 Send File", key=f"send_file_{st.session_state.current_chat}"):
+                text_content = ""
+                try:
+                    text_content = file_bytes.decode("utf-8")
+                except Exception:
+                    text_content = "[Binary file content not displayed]"
+                msg_text = f"📎 Attached file: **{file_name_up}**\n\n{text_content[:3000]}"
+                if file_prompt:
+                    msg_text = f"{file_prompt}\n\n{msg_text}"
+                st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_text})
                 save_chats()
                 st.rerun()
 
