@@ -366,9 +366,9 @@ with st.expander("📎 Attach", expanded=False):
         uploaded_file = st.file_uploader("Choose a photo", type=["image/jpeg", "image/png", "image/webp", "image/gif"], key=f"gallery_uploader_{st.session_state.current_chat}")
         if uploaded_file is not None:
             file_bytes = uploaded_file.getvalue()
-            img_b64 = base64.b64encode(file_bytes).decode("utf-8")
             mime = uploaded_file.type or "image/jpeg"
-            st.image(base64.b64decode(img_b64), width=120)
+            st.image(file_bytes, width=120)
+            img_b64 = base64.b64encode(file_bytes).decode("utf-8")
             photo_prompt = st.text_input("Add a message (optional):", key=f"photo_prompt_{st.session_state.current_chat}")
             if st.button("📤 Send Photo", key=f"send_photo_{st.session_state.current_chat}"):
                 msg_content = [{"type": "text", "text": photo_prompt if photo_prompt else ui["photo_sent"]}, {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_b64}"}}]
@@ -379,8 +379,8 @@ with st.expander("📎 Attach", expanded=False):
         cam_image = st.camera_input("Take a photo", key=f"cam_input_{st.session_state.current_chat}")
         if cam_image is not None:
             file_bytes = cam_image.getvalue()
+            st.image(file_bytes, width=120)
             img_b64 = base64.b64encode(file_bytes).decode("utf-8")
-            st.image(base64.b64decode(img_b64), width=120)
             photo_prompt = st.text_input("Add a message (optional):", key=f"cam_prompt_{st.session_state.current_chat}")
             if st.button("📤 Send Photo", key=f"send_cam_{st.session_state.current_chat}"):
                 msg_content = [{"type": "text", "text": photo_prompt if photo_prompt else ui["photo_sent"]}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{img_b64}"}}]
