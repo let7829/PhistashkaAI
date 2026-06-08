@@ -17,11 +17,25 @@ def get_groq_client():
     return Groq(api_key=st.secrets[key_name])
 
 
+def get_available_key_indices():
+    available = []
+    for i in range(1, 6):
+        if f"GROQ_API_KEY_{i}" in st.secrets:
+            available.append(i)
+    return available if available else [1]
+
+
 def switch_api_key():
-    if "GROQ_API_KEY_2" in st.secrets and st.session_state.active_key_index == 1:
-        st.session_state.active_key_index = 2
-    elif "GROQ_API_KEY_1" in st.secrets and st.session_state.active_key_index == 2:
-        st.session_state.active_key_index = 1
+    available = get_available_key_indices()
+    if not available:
+        return
+    current = st.session_state.active_key_index
+    if current in available:
+        idx = available.index(current)
+        next_idx = (idx + 1) % len(available)
+        st.session_state.active_key_index = available[next_idx]
+    else:
+        st.session_state.active_key_index = available[0]
 
 
 if "active_key_index" not in st.session_state:
@@ -32,7 +46,7 @@ def init_token_tracking():
     if "key_usage" not in st.session_state:
         st.session_state.key_usage = {}
     today = datetime.now().date()
-    for idx in [1, 2]:
+    for idx in range(1, 6):
         if idx not in st.session_state.key_usage:
             st.session_state.key_usage[idx] = {"tokens_today": 0, "last_reset": today}
         else:
@@ -476,11 +490,13 @@ with st.sidebar:
     st.info(f"Using API Key #{st.session_state.active_key_index}")
     st.write("---")
     st.write("**📊 Token Usage (Today)**")
-    current_key = st.session_state.active_key_index
-    usage = st.session_state.key_usage.get(current_key, {"tokens_today": 0})
+    available_keys = get_available_key_indices()
     limit_display = st.session_state.get("current_model_limit", 100_000)
-    st.write(f"Key {current_key}: `{usage['tokens_today']:,}` tokens")
-    st.progress(min(1.0, usage["tokens_today"] / limit_display))
+    for idx in available_keys:
+        usage = st.session_state.key_usage.get(idx, {"tokens_today": 0})
+        active_marker = " 🟢" if idx == st.session_state.active_key_index else ""
+        st.write(f"Key {idx}{active_marker}: `{usage['tokens_today']:,}` / {limit_display:,} tokens")
+        st.progress(min(1.0, usage["tokens_today"] / limit_display))
     time_left = get_time_until_reset()
     hours = time_left.seconds // 3600
     minutes_left = (time_left.seconds % 3600) // 60
@@ -550,6 +566,7 @@ for i, message in enumerate(messages):
             if "meta" in message:
                 meta = message["meta"]
                 st.caption(f"⏱️ {meta['response_time']:.2f}s  |  🕒 {meta['timestamp']}  |  ⚡ {meta['tokens_per_sec']:.1f} tok/s  |  🔢 {meta['total_tokens']} tokens")
+
 with st.expander("📎 Attach Photo", expanded=False):
     photo_tab, camera_tab = st.tabs(["📁 Gallery", "📷 Camera"])
     with photo_tab:
@@ -758,12 +775,14 @@ if (messages and isinstance(messages[-1], dict)
                 )
                 if "api_switch_attempts" not in st.session_state:
                     st.session_state.api_switch_attempts = 0
-                if st.session_state.api_switch_attempts < 1:
+                available = get_available_key_indices()
+                max_attempts = len(available) - 1 if len(available) > 1 else 0
+                if st.session_state.api_switch_attempts < max_attempts:
                     st.session_state.api_switch_attempts += 1
                     switch_api_key()
                     time.sleep(1)
                     st.rerun()
                 else:
-                    st.error("❌ Both API keys exhausted. Please try again later or add more keys.")
+                    st.error("❌ All API keys exhausted. Please try again later or add more keys.")
             else:
                 st.error(f"Error: {error_msg}")
