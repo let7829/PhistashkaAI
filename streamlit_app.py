@@ -187,6 +187,27 @@ if "current_device_key" not in st.session_state or st.session_state.current_devi
     else:
         st.session_state.all_chats = {"Chat 1": []}
     st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
+else:
+    if "all_chats" not in st.session_state:
+        if os.path.exists(file_name):
+            try:
+                with open(file_name, "r", encoding="utf-8") as f:
+                    raw = json.load(f)
+                for chat, msgs in raw.items():
+                    cleaned = []
+                    for m in msgs:
+                        if isinstance(m, dict) and "role" in m and "content" in m:
+                            cleaned.append(m)
+                        elif isinstance(m, str):
+                            cleaned.append({"role": "user", "content": m})
+                    raw[chat] = cleaned
+                st.session_state.all_chats = raw
+            except Exception:
+                st.session_state.all_chats = {"Chat 1": []}
+        else:
+            st.session_state.all_chats = {"Chat 1": []}
+    if "current_chat" not in st.session_state or st.session_state.current_chat not in st.session_state.all_chats:
+        st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
 
 
 def save_chats():
@@ -195,8 +216,6 @@ def save_chats():
             json.dump(st.session_state.all_chats, f, ensure_ascii=False)
 
 
-if "current_chat" not in st.session_state or st.session_state.current_chat not in st.session_state.all_chats:
-    st.session_state.current_chat = list(st.session_state.all_chats.keys())[0]
 if "edit_index" not in st.session_state:
     st.session_state.edit_index = None
 if "editing_chat_name" not in st.session_state:
