@@ -148,9 +148,6 @@ elif st.session_state.native_key:
 else:
     device_key = None
 
-if device_key:
-    components.html(f"""<<script>try{{Android.saveKey('{device_key}');}}catch(e){{}}</script>""", height=0)
-
 ui = TRANSLATIONS[st.session_state.app_lang]
 
 if not device_key:
