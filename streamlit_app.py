@@ -85,40 +85,16 @@ def fetch_url(url, max_chars=2000):
         return f"❌ Could not fetch URL: {e}"
 
 
-def generate_thinking_notes(user_input, ai_tone, fetched_content=None):
-    notes = []
-    if fetched_content:
-        notes.append(f"📎 Using fetched content for context")
-        notes.append(f"🔍 Analyzing: {fetched_content[:150]}...")
-    tone_notes = {
-        "Humor & Sarcasm": "Add witty remark, keep it funny but helpful",
-        "Storyteller": "Frame response as engaging narrative",
-        "Aggressive": "Keep it short and dismissive",
-        "Socrates": "Respond only with counter-questions",
-        "Lazy": "Maximum 10 words, make typos",
-        "Gamer Pro": "Use gaming terminology and slang",
-        "Hyper Nerd": "Over-explain with technical jargon",
-        "Pirate": "Full pirate speak mode",
-        "Shakespeare": "Early Modern English, poetic phrasing",
+def simulate_thinking(speed):
+    delays = {
+        "Fast": (0.8, 1.5),
+        "Normal": (1.5, 3.0),
+        "Deep Think": (3.0, 6.0)
     }
-    if ai_tone in tone_notes:
-        notes.append(f"🎭 Tone: {tone_notes[ai_tone]}")
-    notes.append(f"🌐 Responding in {st.session_state.app_lang}")
-    notes.append("✅ Keep response clear and contextual")
-    return notes
-
-
-def simulate_thinking(notes, delay_range=(2, 5)):
+    delay_range = delays.get(speed, (1.5, 3.0))
     thinking_container = st.empty()
     thinking_container.markdown("💭 **Thinking...**")
     time.sleep(random.uniform(delay_range[0], delay_range[1]))
-    notes_md = "📝 **Internal Notes:**\n"
-    for note in notes:
-        notes_md += f"  • {note}\n"
-    thinking_container.markdown(notes_md)
-    time.sleep(random.uniform(1, 2))
-    thinking_container.markdown("💬 **Crafting final response...**")
-    time.sleep(0.5)
     thinking_container.empty()
 
 
@@ -192,16 +168,15 @@ TRANSLATIONS = {
         "lang_caption": "🌐 Change language",
         "photo_sent": "📷 Photo sent",
         "thinking_label": "💭 Thinking Mode",
-        "thinking_help": "Shows AI's internal reasoning process",
+        "thinking_help": "Simulate AI thinking process before answering",
         "thinking_speed": "⏱ Thinking Speed",
-        "web_context": "🌐 Web Context",
-        "fetch_url_label": "Enter URL for context (optional):",
-        "fetch_btn": "🔍 Fetch URL",
-        "fetch_success": "✅ Fetched",
-        "fetch_chars": "characters!",
-        "fetch_preview": "📄 Preview fetched content",
-        "fetch_clear": "🗑 Clear Fetched Content",
-        "ai_settings_label": "⚙️ AI Settings"
+        "web_search_label": "🌐 Enable Web Search",
+        "fetch_url_label": "Enter URL for context:",
+        "fetch_btn": "🔍 Fetch",
+        "fetch_clear": "🗑 Clear",
+        "ai_settings_tab": "⚙️ AI Settings",
+        "gallery_tab": "🖼 Gallery",
+        "camera_tab": "📷 Camera"
     },
     "Russian": {
         "title": "Фисташка ИИ",
@@ -222,16 +197,15 @@ TRANSLATIONS = {
         "lang_caption": "🌐 Поменять язык",
         "photo_sent": "📷 Фото отправлено",
         "thinking_label": "💭 Режим размышления",
-        "thinking_help": "Показывает внутренний процесс рассуждения ИИ",
+        "thinking_help": "Имитировать процесс размышления ИИ перед ответом",
         "thinking_speed": "⏱ Скорость размышления",
-        "web_context": "🌐 Веб-контекст",
+        "web_search_label": "🌐 Включить веб-поиск",
         "fetch_url_label": "Введите URL для контекста:",
-        "fetch_btn": "🔍 Загрузить URL",
-        "fetch_success": "✅ Загружено",
-        "fetch_chars": "символов!",
-        "fetch_preview": "📄 Предпросмотр содержимого",
-        "fetch_clear": "🗑 Очистить содержимое",
-        "ai_settings_label": "⚙️ Настройки ИИ"
+        "fetch_btn": "🔍 Загрузить",
+        "fetch_clear": "🗑 Очистить",
+        "ai_settings_tab": "⚙️ Настройки ИИ",
+        "gallery_tab": "🖼 Галерея",
+        "camera_tab": "📷 Камера"
     },
     "Ukrainian": {
         "title": "Фісташка ШІ",
@@ -252,16 +226,15 @@ TRANSLATIONS = {
         "lang_caption": "🌐 Змінити мову",
         "photo_sent": "📷 Фото надіслано",
         "thinking_label": "💭 Режим роздумів",
-        "thinking_help": "Показує внутрішній процес міркування ШІ",
+        "thinking_help": "Імітувати процес роздумів ШІ перед відповіддю",
         "thinking_speed": "⏱ Швидкість роздумів",
-        "web_context": "🌐 Веб-контекст",
+        "web_search_label": "🌐 Увімкнути веб-пошук",
         "fetch_url_label": "Введіть URL для контексту:",
-        "fetch_btn": "🔍 Завантажити URL",
-        "fetch_success": "✅ Завантажено",
-        "fetch_chars": "символів!",
-        "fetch_preview": "📄 Попередній перегляд вмісту",
-        "fetch_clear": "🗑 Очистити вміст",
-        "ai_settings_label": "⚙️ Налаштування ШІ"
+        "fetch_btn": "🔍 Завантажити",
+        "fetch_clear": "🗑 Очистити",
+        "ai_settings_tab": "⚙️ Налаштування ШІ",
+        "gallery_tab": "🖼 Галерея",
+        "camera_tab": "📷 Камера"
     }
 }
 
@@ -367,19 +340,15 @@ if "placeholder_text" not in st.session_state:
 if "thinking_mode_enabled" not in st.session_state:
     st.session_state.thinking_mode_enabled = True
 if "thinking_speed" not in st.session_state:
-    st.session_state.thinking_speed = "Normal"
+    st.session_state.thinking_speed = "Fast"
+if "web_search_enabled" not in st.session_state:
+    st.session_state.web_search_enabled = False
 if "fetched_content" not in st.session_state:
     st.session_state.fetched_content = None
 if "fetch_url_value" not in st.session_state:
     st.session_state.fetch_url_value = ""
 if "selected_theme" not in st.session_state:
-    st.session_state.selected_theme = "Dark Blue"
-
-speed_delays = {
-    "Fast": (1, 2),
-    "Normal": (2, 5),
-    "Deep Think": (5, 10)
-}
+    st.session_state.selected_theme = "Default"
 
 st.title(ui["title"])
 
@@ -438,26 +407,6 @@ with st.sidebar:
     ai_tone = st.selectbox(ui["tone_label"], ["Normal", "Humor & Sarcasm", "Storyteller", "Aggressive", "Socrates", "Lazy", "Gamer Pro", "Hyper Nerd", "Pirate", "Shakespeare"])
     st.write(f"### {ui['theme_label']}")
     st.session_state.selected_theme = st.radio("", list(THEMES.keys()), index=list(THEMES.keys()).index(st.session_state.selected_theme))
-    
-    st.divider()
-    st.write(f"**{ui['web_context']}**")
-    fetch_url_input = st.text_input(ui["fetch_url_label"], value=st.session_state.fetch_url_value, key="fetch_url_input", placeholder="https://example.com")
-    if fetch_url_input:
-        if st.button(ui["fetch_btn"], use_container_width=True):
-            with st.spinner("🌐 Fetching content..."):
-                st.session_state.fetched_content = fetch_url(fetch_url_input)
-                st.session_state.fetch_url_value = fetch_url_input
-                if st.session_state.fetched_content and not st.session_state.fetched_content.startswith("❌"):
-                    st.success(f"{ui['fetch_success']} {len(st.session_state.fetched_content)} {ui['fetch_chars']}")
-                    with st.expander(ui["fetch_preview"]):
-                        st.text(st.session_state.fetched_content[:500])
-                else:
-                    st.error(st.session_state.fetched_content)
-    if st.session_state.fetched_content and not st.session_state.fetched_content.startswith("❌"):
-        if st.button(ui["fetch_clear"], use_container_width=True):
-            st.session_state.fetched_content = None
-            st.session_state.fetch_url_value = ""
-            st.rerun()
 
     st.divider()
     st.header(ui["session_header"])
@@ -537,9 +486,64 @@ for i, message in enumerate(messages):
                 meta = message["meta"]
                 st.caption(f"⏱️ {meta['response_time']:.2f}s  |  🕒 {meta['timestamp']}  |  ⚡ {meta['tokens_per_sec']:.1f} tok/s  |  🔢 {meta['total_tokens']} tokens")
 
-with st.expander(ui["ai_settings_label"], expanded=False):
-    st.session_state.thinking_mode_enabled = st.toggle(ui["thinking_label"], value=st.session_state.thinking_mode_enabled, help=ui["thinking_help"])
-    st.session_state.thinking_speed = st.select_slider(ui["thinking_speed"], options=["Fast", "Normal", "Deep Think"], value=st.session_state.thinking_speed)
+with st.expander("📎 Attach", expanded=False):
+    attach_mode = st.radio(
+        "",
+        [ui["gallery_tab"], ui["camera_tab"], ui["ai_settings_tab"]],
+        horizontal=True,
+        key=f"attach_mode_{st.session_state.current_chat}"
+    )
+
+    if attach_mode == ui["gallery_tab"]:
+        uploaded_file = st.file_uploader("Choose a photo", type=["image/jpeg", "image/png", "image/webp", "image/gif"], key=f"gallery_uploader_{st.session_state.current_chat}")
+        if uploaded_file is not None:
+            file_bytes = uploaded_file.getvalue()
+            mime = uploaded_file.type or "image/jpeg"
+            st.image(file_bytes, width=120)
+            img_b64 = base64.b64encode(file_bytes).decode("utf-8")
+            photo_prompt = st.text_input("Add a message (optional):", key=f"photo_prompt_{st.session_state.current_chat}")
+            if st.button("📤 Send Photo", key=f"send_photo_{st.session_state.current_chat}"):
+                msg_content = [{"type": "text", "text": photo_prompt if photo_prompt else ui["photo_sent"]}, {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_b64}"}}]
+                st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+                save_chats()
+                st.rerun()
+
+    elif attach_mode == ui["camera_tab"]:
+        camera_photo = st.camera_input("Take a photo", key=f"cam_{st.session_state.current_chat}")
+        if camera_photo is not None:
+            st.image(camera_photo, width=120)
+            photo_prompt = st.text_input("Add a message (optional):", key=f"cam_prompt_{st.session_state.current_chat}")
+            if st.button("📤 Send Photo", key=f"cam_send_{st.session_state.current_chat}"):
+                file_bytes = camera_photo.getvalue()
+                img_b64 = base64.b64encode(file_bytes).decode("utf-8")
+                mime = camera_photo.type
+                msg_content = [{"type": "text", "text": photo_prompt if photo_prompt else ui["photo_sent"]}, {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{img_b64}"}}]
+                st.session_state.all_chats[st.session_state.current_chat].append({"role": "user", "content": msg_content})
+                save_chats()
+                st.rerun()
+
+    elif attach_mode == ui["ai_settings_tab"]:
+        st.session_state.thinking_mode_enabled = st.toggle(ui["thinking_label"], value=st.session_state.thinking_mode_enabled, help=ui["thinking_help"])
+        st.session_state.thinking_speed = st.select_slider(ui["thinking_speed"], options=["Fast", "Normal", "Deep Think"], value=st.session_state.thinking_speed)
+        st.session_state.web_search_enabled = st.toggle(ui["web_search_label"], value=st.session_state.web_search_enabled)
+        if st.session_state.web_search_enabled:
+            fetch_url_input = st.text_input(ui["fetch_url_label"], value=st.session_state.fetch_url_value, key="fetch_url_input_ai")
+            col_fetch, col_clear = st.columns(2)
+            with col_fetch:
+                if st.button(ui["fetch_btn"], use_container_width=True):
+                    with st.spinner("🌐 Fetching..."):
+                        result = fetch_url(fetch_url_input)
+                        if not result.startswith("❌"):
+                            st.session_state.fetched_content = result
+                            st.session_state.fetch_url_value = fetch_url_input
+                            st.success("Content fetched!")
+                        else:
+                            st.error(result)
+            with col_clear:
+                if st.button(ui["fetch_clear"], use_container_width=True):
+                    st.session_state.fetched_content = None
+                    st.session_state.fetch_url_value = ""
+                    st.rerun()
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(ui["phrases"])
@@ -553,18 +557,21 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
     with st.chat_message("assistant"):
         try:
             if st.session_state.thinking_mode_enabled:
-                fetched = st.session_state.get("fetched_content", None)
-                last_msg_for_notes = messages[-1]["content"]
-                user_text_for_notes = next((item["text"] for item in last_msg_for_notes if item["type"] == "text"), "") if isinstance(last_msg_for_notes, list) else last_msg_for_notes
-                notes = generate_thinking_notes(user_text_for_notes, ai_tone, fetched_content=fetched)
-                simulate_thinking(notes, speed_delays.get(st.session_state.thinking_speed, (2, 5)))
+                simulate_thinking(st.session_state.thinking_speed)
+
+            if st.session_state.fetched_content:
+                url_used = st.session_state.fetch_url_value
+                notice_placeholder = st.empty()
+                notice_placeholder.info(f"🔍 Using web context from: {url_used}")
+                time.sleep(2)
+                notice_placeholder.empty()
 
             client = get_groq_client()
             last_msg_content = messages[-1]["content"]
 
             fetched_extra = ""
-            if st.session_state.get("fetched_content"):
-                fetched_extra = f"\n\n[WEB CONTEXT FROM {st.session_state.get('fetch_url_value', 'URL')}]:\n{st.session_state.fetched_content[:1500]}\n[END WEB CONTEXT]"
+            if st.session_state.fetched_content:
+                fetched_extra = f"\n\n[WEB CONTEXT FROM {st.session_state.fetch_url_value}]:\n{st.session_state.fetched_content[:1500]}\n[END WEB CONTEXT]"
                 st.session_state.fetched_content = None
                 st.session_state.fetch_url_value = ""
 
