@@ -70,6 +70,29 @@ def get_time_until_reset():
     return midnight - now
 
 
+def web_search(query, num_results=3):
+    try:
+        search_url = "https://html.duckduckgo.com/html/"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+        }
+        payload = {"q": query}
+        resp = requests.post(search_url, data=payload, headers=headers, timeout=10)
+        soup = BeautifulSoup(resp.text, "html.parser")
+        results = []
+        for item in soup.select(".result")[:num_results]:
+            title_tag = item.select_one(".result__title a")
+            snippet_tag = item.select_one(".result__snippet")
+            if title_tag:
+                title = title_tag.get_text(strip=True)
+                link = title_tag["href"]
+                snippet = snippet_tag.get_text(strip=True) if snippet_tag else ""
+                results.append({"title": title, "link": link, "snippet": snippet})
+        return results if results else [{"title": "No results", "link": "", "snippet": "No results found"}]
+    except Exception as e:
+        return [{"title": "Search error", "link": "", "snippet": str(e)}]
+
+
 def fetch_url(url, max_chars=2000):
     try:
         response = requests.get(url, timeout=5, headers={
@@ -170,10 +193,8 @@ TRANSLATIONS = {
         "thinking_label": "💭 Thinking Mode",
         "thinking_help": "Simulate AI thinking process before answering",
         "thinking_speed": "⏱ Thinking Speed",
-        "web_search_label": "🌐 Enable Web Search",
-        "fetch_url_label": "Enter URL for context:",
-        "fetch_btn": "🔍 Fetch",
-        "fetch_clear": "🗑 Clear",
+        "web_search_label": "🌐 Web Search",
+        "web_search_help": "Allow AI to search the internet for real-time information",
         "ai_settings_tab": "⚙️ AI Settings",
         "gallery_tab": "🖼 Gallery",
         "camera_tab": "📷 Camera"
@@ -199,10 +220,8 @@ TRANSLATIONS = {
         "thinking_label": "💭 Режим размышления",
         "thinking_help": "Имитировать процесс размышления ИИ перед ответом",
         "thinking_speed": "⏱ Скорость размышления",
-        "web_search_label": "🌐 Включить веб-поиск",
-        "fetch_url_label": "Введите URL для контекста:",
-        "fetch_btn": "🔍 Загрузить",
-        "fetch_clear": "🗑 Очистить",
+        "web_search_label": "🌐 Веб-поиск",
+        "web_search_help": "Разрешить ИИ искать информацию в интернете",
         "ai_settings_tab": "⚙️ Настройки ИИ",
         "gallery_tab": "🖼 Галерея",
         "camera_tab": "📷 Камера"
@@ -228,10 +247,8 @@ TRANSLATIONS = {
         "thinking_label": "💭 Режим роздумів",
         "thinking_help": "Імітувати процес роздумів ШІ перед відповіддю",
         "thinking_speed": "⏱ Швидкість роздумів",
-        "web_search_label": "🌐 Увімкнути веб-пошук",
-        "fetch_url_label": "Введіть URL для контексту:",
-        "fetch_btn": "🔍 Завантажити",
-        "fetch_clear": "🗑 Очистити",
+        "web_search_label": "🌐 Веб-пошук",
+        "web_search_help": "Дозволити ШІ шукати інформацію в інтернеті",
         "ai_settings_tab": "⚙️ Налаштування ШІ",
         "gallery_tab": "🖼 Галерея",
         "camera_tab": "📷 Камера"
@@ -342,11 +359,7 @@ if "thinking_mode_enabled" not in st.session_state:
 if "thinking_speed" not in st.session_state:
     st.session_state.thinking_speed = "Fast"
 if "web_search_enabled" not in st.session_state:
-    st.session_state.web_search_enabled = False
-if "fetched_content" not in st.session_state:
-    st.session_state.fetched_content = None
-if "fetch_url_value" not in st.session_state:
-    st.session_state.fetch_url_value = ""
+    st.session_state.web_search_enabled = True
 if "selected_theme" not in st.session_state:
     st.session_state.selected_theme = "Default"
 
@@ -525,25 +538,7 @@ with st.expander("📎 Attach", expanded=False):
     elif attach_mode == ui["ai_settings_tab"]:
         st.session_state.thinking_mode_enabled = st.toggle(ui["thinking_label"], value=st.session_state.thinking_mode_enabled, help=ui["thinking_help"])
         st.session_state.thinking_speed = st.select_slider(ui["thinking_speed"], options=["Fast", "Normal", "Deep Think"], value=st.session_state.thinking_speed)
-        st.session_state.web_search_enabled = st.toggle(ui["web_search_label"], value=st.session_state.web_search_enabled)
-        if st.session_state.web_search_enabled:
-            fetch_url_input = st.text_input(ui["fetch_url_label"], value=st.session_state.fetch_url_value, key="fetch_url_input_ai")
-            col_fetch, col_clear = st.columns(2)
-            with col_fetch:
-                if st.button(ui["fetch_btn"], use_container_width=True):
-                    with st.spinner("🌐 Fetching..."):
-                        result = fetch_url(fetch_url_input)
-                        if not result.startswith("❌"):
-                            st.session_state.fetched_content = result
-                            st.session_state.fetch_url_value = fetch_url_input
-                            st.success("Content fetched!")
-                        else:
-                            st.error(result)
-            with col_clear:
-                if st.button(ui["fetch_clear"], use_container_width=True):
-                    st.session_state.fetched_content = None
-                    st.session_state.fetch_url_value = ""
-                    st.rerun()
+        st.session_state.web_search_enabled = st.toggle(ui["web_search_label"], value=st.session_state.web_search_enabled, help=ui["web_search_help"])
 
 if prompt := st.chat_input(st.session_state.placeholder_text):
     st.session_state.placeholder_text = random.choice(ui["phrases"])
@@ -559,37 +554,14 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
             if st.session_state.thinking_mode_enabled:
                 simulate_thinking(st.session_state.thinking_speed)
 
-            if st.session_state.fetched_content:
-                url_used = st.session_state.fetch_url_value
-                notice_placeholder = st.empty()
-                notice_placeholder.info(f"🔍 Using web context from: {url_used}")
-                time.sleep(2)
-                notice_placeholder.empty()
-
             client = get_groq_client()
             last_msg_content = messages[-1]["content"]
-
-            fetched_extra = ""
-            if st.session_state.fetched_content:
-                fetched_extra = f"\n\n[WEB CONTEXT FROM {st.session_state.fetch_url_value}]:\n{st.session_state.fetched_content[:1500]}\n[END WEB CONTEXT]"
-                st.session_state.fetched_content = None
-                st.session_state.fetch_url_value = ""
 
             current_is_image = isinstance(last_msg_content, list)
             model = "meta-llama/llama-4-scout-17b-16e-instruct" if current_is_image else "llama-3.3-70b-versatile"
             st.session_state.current_model_limit = get_daily_limit_for_model(model)
 
             user_text = next((item["text"] for item in last_msg_content if item["type"] == "text"), "") if current_is_image else last_msg_content
-
-            if fetched_extra:
-                if current_is_image:
-                    for item in last_msg_content:
-                        if item["type"] == "text":
-                            item["text"] += fetched_extra
-                            break
-                else:
-                    last_msg_content += fetched_extra
-                    messages[-1]["content"] = last_msg_content
 
             DEVELOPER_GUIDE = (
                 "You are Phistashka AI. Hello! Its me, your developer, let me do a quick guide: "
@@ -604,6 +576,8 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                 system_prompt = DEVELOPER_GUIDE
             else:
                 system_prompt = "You are Phistashka AI, a helpful assistant."
+                if st.session_state.web_search_enabled and model == "llama-3.3-70b-versatile":
+                    system_prompt += " You have access to web search and web page reading tools. Use them when you need up-to-date or factual information."
 
             api_messages = [{"role": "system", "content": system_prompt}]
             for msg in messages[:-1]:
@@ -620,12 +594,92 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                 m_content = f"[User previously attached an image] {text_part}"
             api_messages.append({"role": messages[-1]["role"], "content": m_content})
 
-            start_time = time.time()
-            completion = client.chat.completions.create(model=model, messages=api_messages)
-            end_time = time.time()
-            response_text = completion.choices[0].message.content
+            tools = None
+            if st.session_state.web_search_enabled and model == "llama-3.3-70b-versatile":
+                tools = [
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "web_search",
+                            "description": "Search the web for information. Returns a list of results with title, link, and snippet.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "query": {"type": "string", "description": "The search query"}
+                                },
+                                "required": ["query"]
+                            }
+                        }
+                    },
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "fetch_page",
+                            "description": "Fetch and read the text content of a web page given its URL.",
+                            "parameters": {
+                                "type": "object",
+                                "properties": {
+                                    "url": {"type": "string", "description": "The URL of the page to fetch"}
+                                },
+                                "required": ["url"]
+                            }
+                        }
+                    }
+                ]
 
-            usage_data = completion.usage
+            start_time = time.time()
+
+            if tools:
+                max_tool_rounds = 3
+                for _ in range(max_tool_rounds):
+                    response = client.chat.completions.create(
+                        model=model,
+                        messages=api_messages,
+                        tools=tools,
+                        tool_choice="auto"
+                    )
+                    response_message = response.choices[0].message
+                    api_messages.append(response_message)
+
+                    if not response_message.tool_calls:
+                        break
+
+                    tool_outputs = []
+                    for tool_call in response_message.tool_calls:
+                        func_name = tool_call.function.name
+                        func_args = json.loads(tool_call.function.arguments)
+
+                        if func_name == "web_search":
+                            query = func_args.get("query", "")
+                            results = web_search(query)
+                            tool_outputs.append({
+                                "tool_call_id": tool_call.id,
+                                "role": "tool",
+                                "content": json.dumps(results, ensure_ascii=False)
+                            })
+                        elif func_name == "fetch_page":
+                            url = func_args.get("url", "")
+                            content = fetch_url(url, max_chars=3000)
+                            tool_outputs.append({
+                                "tool_call_id": tool_call.id,
+                                "role": "tool",
+                                "content": content
+                            })
+
+                    for out in tool_outputs:
+                        api_messages.append(out)
+
+                final_response = response.choices[0].message.content or ""
+            else:
+                completion = client.chat.completions.create(model=model, messages=api_messages)
+                final_response = completion.choices[0].message.content
+
+            end_time = time.time()
+            response_text = final_response
+
+            usage_data = getattr(locals().get('completion', None), 'usage', None)
+            if not usage_data and 'response' in locals():
+                usage_data = response.usage if hasattr(response, 'usage') else None
             total_tokens = usage_data.total_tokens if usage_data else 0
             prompt_tokens = usage_data.prompt_tokens if usage_data else 0
             completion_tokens = usage_data.completion_tokens if usage_data else 0
