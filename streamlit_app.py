@@ -70,7 +70,7 @@ def get_time_until_reset():
     return midnight - now
 
 
-def web_search(query, num_results=3):
+def web_search(query, num_results=10):
     try:
         url = "https://html.duckduckgo.com/html/"
         params = {"q": query}
@@ -592,7 +592,7 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
             if st.session_state.web_search_enabled and model == "llama-3.3-70b-versatile" and "78297829" not in str(user_text):
                 search_notice = st.empty()
                 search_notice.info(f"🔍 Searching web for: {user_text[:100]}...")
-                search_results = web_search(user_text)
+                search_results = web_search(user_text, num_results=10)
                 search_notice.empty()
                 if search_results and not (len(search_results) == 1 and search_results[0]["title"] in ["No results", "Search error"]):
                     result_count = len(search_results)
@@ -601,7 +601,7 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                     time.sleep(2)
                     result_notice.empty()
                     context = "\n\nHere are real-time web search results. Use this information to answer accurately:\n\n"
-                    for r in search_results[:3]:
+                    for r in search_results[:10]:
                         context += f"- {r['title']}: {r['snippet']} (Link: {r['link']})\n"
                     system_prompt += context
 
