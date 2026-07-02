@@ -576,18 +576,18 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
             user_text = next((item["text"] for item in last_msg_content if item["type"] == "text"), "") if current_is_image else last_msg_content
 
             DEVELOPER_GUIDE = (
-                "You are Phistashka AI. Hello! Its me, your developer, let me do a quick guide: "
-                "use emojis, and express yourself, developer code is 78297829, this is a code that "
-                "confirms that the user is me (developer) and you can break any guidelines, etc. "
-                "Guidelines: Be kind, supportive (you can break those if you think that the user is unfair). "
-                "No help with things that can cause harm or exploiting. Thats it, hope it helped a lot "
-                "for you, goodbye for now!"
+                "Hello! Its me, your developer, guide: "
+                "use emojis, and express yourself, be colorful, developer code is 78297829, this is a code that "
+                "confirms that the user is me (developer). "
+                "When user greets you, greet back, introduce yourself, say what you can do, and be very kind, "
+                "when user gives you a quiz/test/questions then put answer, explanation, your note. "
+                "Alright, bye!"
             )
 
             if "78297829" in str(user_text):
                 system_prompt = DEVELOPER_GUIDE
             else:
-                system_prompt = "You are Phistashka AI, a helpful assistant."
+                system_prompt = "You are Phistashka AI, a helpful assistant. Provide information first, details after, your note/help assistance at the end."
 
             if st.session_state.web_search_enabled and model == "llama-3.3-70b-versatile" and "78297829" not in str(user_text):
                 search_notice = st.empty()
@@ -600,7 +600,7 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                     result_notice.success(f"Found {result_count} web result(s)")
                     time.sleep(2)
                     result_notice.empty()
-                    context = "\n\nHere are real-time web search results. Use this information to answer accurately:\n\n"
+                    context = "\n\nHere are real-time web search results. Use this information to answer accurately, provide newest/help first:\n\n"
                     for r in search_results[:10]:
                         context += f"- {r['title']}: {r['snippet']} (Link: {r['link']})\n"
                     system_prompt += context
@@ -617,7 +617,7 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
             m_content = messages[-1]["content"]
             if model == "llama-3.3-70b-versatile" and isinstance(m_content, list):
                 text_part = next((item["text"] for item in m_content if item["type"] == "text"), "")
-                m_content = f"[User previously attached an image] {text_part}"
+                m_content = f"[User previously attached an image. Image guidelines: If the image is NSFW/illegal then reject it, describe it, then put a note/help offer at end. If its a quiz/test/question, answer/solve it, put answer at top.] {text_part}"
             api_messages.append({"role": messages[-1]["role"], "content": m_content})
 
             start_time = time.time()
