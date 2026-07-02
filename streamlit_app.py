@@ -194,7 +194,7 @@ TRANSLATIONS = {
         "thinking_help": "Simulate AI thinking process before answering",
         "thinking_speed": "⏱ Thinking Speed",
         "web_search_label": "🌐 Web Search",
-        "web_search_help": "Allow AI to search the internet for real-time information",
+        "web_search_help": "Search the internet for real-time information before answering",
         "ai_settings_tab": "⚙️ AI Settings",
         "gallery_tab": "🖼 Gallery",
         "camera_tab": "📷 Camera"
@@ -221,7 +221,7 @@ TRANSLATIONS = {
         "thinking_help": "Имитировать процесс размышления ИИ перед ответом",
         "thinking_speed": "⏱ Скорость размышления",
         "web_search_label": "🌐 Веб-поиск",
-        "web_search_help": "Разрешить ИИ искать информацию в интернете",
+        "web_search_help": "Искать информацию в интернете перед ответом",
         "ai_settings_tab": "⚙️ Настройки ИИ",
         "gallery_tab": "🖼 Галерея",
         "camera_tab": "📷 Камера"
@@ -248,7 +248,7 @@ TRANSLATIONS = {
         "thinking_help": "Імітувати процес роздумів ШІ перед відповіддю",
         "thinking_speed": "⏱ Швидкість роздумів",
         "web_search_label": "🌐 Веб-пошук",
-        "web_search_help": "Дозволити ШІ шукати інформацію в інтернеті",
+        "web_search_help": "Шукати інформацію в інтернеті перед відповіддю",
         "ai_settings_tab": "⚙️ Налаштування ШІ",
         "gallery_tab": "🖼 Галерея",
         "camera_tab": "📷 Камера"
@@ -576,10 +576,20 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                 system_prompt = DEVELOPER_GUIDE
             else:
                 system_prompt = "You are Phistashka AI, a helpful assistant."
-                if st.session_state.web_search_enabled and model == "llama-3.3-70b-versatile":
-                    system_prompt += " You have access to web search and web page reading tools. Use them when you need up-to-date or factual information."
 
             api_messages = [{"role": "system", "content": system_prompt}]
+
+            if st.session_state.web_search_enabled and model == "llama-3.3-70b-versatile" and "78297829" not in str(user_text):
+                search_notice = st.empty()
+                search_notice.info(f"🔍 Searching web for: {user_text[:100]}...")
+                search_results = web_search(user_text)
+                search_notice.empty()
+                if search_results:
+                    context = "Here are real-time web search results. Use this information to answer accurately:\n\n"
+                    for r in search_results[:3]:
+                        context += f"- {r['title']}: {r['snippet']} (Link: {r['link']})\n"
+                    api_messages.append({"role": "system", "content": context})
+
             for msg in messages[:-1]:
                 if not isinstance(msg, dict):
                     continue
@@ -594,92 +604,12 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                 m_content = f"[User previously attached an image] {text_part}"
             api_messages.append({"role": messages[-1]["role"], "content": m_content})
 
-            tools = None
-            if st.session_state.web_search_enabled and model == "llama-3.3-70b-versatile":
-                tools = [
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "web_search",
-                            "description": "Search the web for information. Returns a list of results with title, link, and snippet.",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "query": {"type": "string", "description": "The search query"}
-                                },
-                                "required": ["query"]
-                            }
-                        }
-                    },
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "fetch_page",
-                            "description": "Fetch and read the text content of a web page given its URL.",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "url": {"type": "string", "description": "The URL of the page to fetch"}
-                                },
-                                "required": ["url"]
-                            }
-                        }
-                    }
-                ]
-
             start_time = time.time()
-
-            if tools:
-                max_tool_rounds = 3
-                for _ in range(max_tool_rounds):
-                    response = client.chat.completions.create(
-                        model=model,
-                        messages=api_messages,
-                        tools=tools,
-                        tool_choice="auto"
-                    )
-                    response_message = response.choices[0].message
-                    api_messages.append(response_message)
-
-                    if not response_message.tool_calls:
-                        break
-
-                    tool_outputs = []
-                    for tool_call in response_message.tool_calls:
-                        func_name = tool_call.function.name
-                        func_args = json.loads(tool_call.function.arguments)
-
-                        if func_name == "web_search":
-                            query = func_args.get("query", "")
-                            results = web_search(query)
-                            tool_outputs.append({
-                                "tool_call_id": tool_call.id,
-                                "role": "tool",
-                                "content": json.dumps(results, ensure_ascii=False)
-                            })
-                        elif func_name == "fetch_page":
-                            url = func_args.get("url", "")
-                            content = fetch_url(url, max_chars=3000)
-                            tool_outputs.append({
-                                "tool_call_id": tool_call.id,
-                                "role": "tool",
-                                "content": content
-                            })
-
-                    for out in tool_outputs:
-                        api_messages.append(out)
-
-                final_response = response.choices[0].message.content or ""
-            else:
-                completion = client.chat.completions.create(model=model, messages=api_messages)
-                final_response = completion.choices[0].message.content
-
+            completion = client.chat.completions.create(model=model, messages=api_messages)
             end_time = time.time()
-            response_text = final_response
+            response_text = completion.choices[0].message.content
 
-            usage_data = getattr(locals().get('completion', None), 'usage', None)
-            if not usage_data and 'response' in locals():
-                usage_data = response.usage if hasattr(response, 'usage') else None
+            usage_data = completion.usage
             total_tokens = usage_data.total_tokens if usage_data else 0
             prompt_tokens = usage_data.prompt_tokens if usage_data else 0
             completion_tokens = usage_data.completion_tokens if usage_data else 0
