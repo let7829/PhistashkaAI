@@ -72,23 +72,35 @@ def get_time_until_reset():
 
 def web_search(query, num_results=3):
     try:
-        search_url = "https://html.duckduckgo.com/html/"
+        url = "https://html.duckduckgo.com/html/"
+        params = {"q": query}
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
         }
-        payload = {"q": query}
-        resp = requests.post(search_url, data=payload, headers=headers, timeout=10)
+        resp = requests.get(url, params=params, headers=headers, timeout=10)
         soup = BeautifulSoup(resp.text, "html.parser")
         results = []
         for item in soup.select(".result")[:num_results]:
             title_tag = item.select_one(".result__title a")
             snippet_tag = item.select_one(".result__snippet")
-            if title_tag:
-                title = title_tag.get_text(strip=True)
-                link = title_tag["href"]
-                snippet = snippet_tag.get_text(strip=True) if snippet_tag else ""
-                results.append({"title": title, "link": link, "snippet": snippet})
-        return results if results else [{"title": "No results", "link": "", "snippet": "No results found"}]
+            if not title_tag:
+                continue
+            title = title_tag.get_text(strip=True)
+            link = title_tag["href"]
+            snippet = snippet_tag.get_text(strip=True) if snippet_tag else ""
+            results.append({"title": title, "link": link, "snippet": snippet})
+        if not results:
+            for item in soup.select(".result__body")[:num_results]:
+                title_tag = item.select_one(".result__title a")
+                snippet_tag = item.select_one(".result__snippet")
+                if title_tag:
+                    title = title_tag.get_text(strip=True)
+                    link = title_tag["href"]
+                    snippet = snippet_tag.get_text(strip=True) if snippet_tag else ""
+                    results.append({"title": title, "link": link, "snippet": snippet})
+        if not results:
+            return [{"title": "No results", "link": "", "snippet": "No results found"}]
+        return results
     except Exception as e:
         return [{"title": "Search error", "link": "", "snippet": str(e)}]
 
