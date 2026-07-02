@@ -206,7 +206,7 @@ TRANSLATIONS = {
         "thinking_help": "Simulate AI thinking process before answering",
         "thinking_speed": "⏱ Thinking Speed",
         "web_search_label": "🌐 Web Search",
-        "web_search_help": "Search the internet for real-time information before answering",
+        "web_search_help": "Let AI request web searches when it needs real-time info",
         "ai_settings_tab": "⚙️ AI Settings",
         "gallery_tab": "🖼 Gallery",
         "camera_tab": "📷 Camera"
@@ -233,7 +233,7 @@ TRANSLATIONS = {
         "thinking_help": "Имитировать процесс размышления ИИ перед ответом",
         "thinking_speed": "⏱ Скорость размышления",
         "web_search_label": "🌐 Веб-поиск",
-        "web_search_help": "Искать информацию в интернете перед ответом",
+        "web_search_help": "Позволить ИИ запрашивать поиск в интернете, когда нужна актуальная информация",
         "ai_settings_tab": "⚙️ Настройки ИИ",
         "gallery_tab": "🖼 Галерея",
         "camera_tab": "📷 Камера"
@@ -260,7 +260,7 @@ TRANSLATIONS = {
         "thinking_help": "Імітувати процес роздумів ШІ перед відповіддю",
         "thinking_speed": "⏱ Швидкість роздумів",
         "web_search_label": "🌐 Веб-пошук",
-        "web_search_help": "Шукати інформацію в інтернеті перед відповіддю",
+        "web_search_help": "Дозволити ШІ запитувати пошук в інтернеті, коли потрібна актуальна інформація",
         "ai_settings_tab": "⚙️ Налаштування ШІ",
         "gallery_tab": "🖼 Галерея",
         "camera_tab": "📷 Камера"
@@ -587,23 +587,13 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
             if "78297829" in str(user_text):
                 system_prompt = DEVELOPER_GUIDE
             else:
-                system_prompt = "You are Phistashka AI, a helpful assistant. Provide information first, details after, your note/help assistance at the end."
-
-            if st.session_state.web_search_enabled and model == "llama-3.3-70b-versatile" and "78297829" not in str(user_text):
-                search_notice = st.empty()
-                search_notice.info(f"🔍 Searching web for: {user_text[:100]}...")
-                search_results = web_search(user_text, num_results=10)
-                search_notice.empty()
-                if search_results and not (len(search_results) == 1 and search_results[0]["title"] in ["No results", "Search error"]):
-                    result_count = len(search_results)
-                    result_notice = st.empty()
-                    result_notice.success(f"Found {result_count} web result(s)")
-                    time.sleep(2)
-                    result_notice.empty()
-                    context = "\n\nHere are real-time web search results. Use this information to answer accurately, provide newest/help first:\n\n"
-                    for r in search_results[:10]:
-                        context += f"- {r['title']}: {r['snippet']} (Link: {r['link']})\n"
-                    system_prompt += context
+                system_prompt = "You are Phistashka AI, a helpful assistant. Always use emojis and be colorful. Provide information first, details after, your note/help assistance at the end."
+                if st.session_state.web_search_enabled and model == "llama-3.3-70b-versatile":
+                    system_prompt += (
+                        "\n\nIf you need real-time or up-to-date information to answer accurately, "
+                        "you can request a web search by outputting [SEARCH:your query] on a separate line. "
+                        "The system will perform the search and provide the results, then you can continue your response."
+                    )
 
             api_messages = [{"role": "system", "content": system_prompt}]
             for msg in messages[:-1]:
@@ -622,8 +612,30 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
 
             start_time = time.time()
             completion = client.chat.completions.create(model=model, messages=api_messages)
-            end_time = time.time()
             response_text = completion.choices[0].message.content
+
+            if st.session_state.web_search_enabled and "[SEARCH:" in response_text:
+                search_line = response_text.split("[SEARCH:")[1].split("]")[0]
+                api_messages.append({"role": "assistant", "content": response_text})
+                search_notice = st.empty()
+                search_notice.info(f"🔍 AI requested search: {search_line}")
+                search_results = web_search(search_line, num_results=10)
+                search_notice.empty()
+                if search_results and not (len(search_results) == 1 and search_results[0]["title"] in ["No results", "Search error"]):
+                    result_count = len(search_results)
+                    result_notice = st.empty()
+                    result_notice.success(f"Found {result_count} web result(s)")
+                    time.sleep(2)
+                    result_notice.empty()
+                    context = "Here are the web search results you requested:\n\n"
+                    for r in search_results[:10]:
+                        context += f"- {r['title']}: {r['snippet']} (Link: {r['link']})\n"
+                    context += "\nNow continue your response using this information."
+                    api_messages.append({"role": "user", "content": context})
+                    completion = client.chat.completions.create(model=model, messages=api_messages)
+                    response_text = completion.choices[0].message.content
+
+            end_time = time.time()
 
             usage_data = completion.usage
             total_tokens = usage_data.total_tokens if usage_data else 0
