@@ -589,19 +589,23 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
             else:
                 system_prompt = "You are Phistashka AI, a helpful assistant."
 
-            api_messages = [{"role": "system", "content": system_prompt}]
-
             if st.session_state.web_search_enabled and model == "llama-3.3-70b-versatile" and "78297829" not in str(user_text):
                 search_notice = st.empty()
                 search_notice.info(f"🔍 Searching web for: {user_text[:100]}...")
                 search_results = web_search(user_text)
                 search_notice.empty()
-                if search_results:
-                    context = "Here are real-time web search results. Use this information to answer accurately:\n\n"
+                if search_results and not (len(search_results) == 1 and search_results[0]["title"] in ["No results", "Search error"]):
+                    result_count = len(search_results)
+                    result_notice = st.empty()
+                    result_notice.success(f"Found {result_count} web result(s)")
+                    time.sleep(2)
+                    result_notice.empty()
+                    context = "\n\nHere are real-time web search results. Use this information to answer accurately:\n\n"
                     for r in search_results[:3]:
                         context += f"- {r['title']}: {r['snippet']} (Link: {r['link']})\n"
-                    api_messages.append({"role": "system", "content": context})
+                    system_prompt += context
 
+            api_messages = [{"role": "system", "content": system_prompt}]
             for msg in messages[:-1]:
                 if not isinstance(msg, dict):
                     continue
