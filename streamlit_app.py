@@ -631,7 +631,7 @@ if (messages and isinstance(messages[-1], dict) and messages[-1].get("role") == 
                     for r in search_results[:10]:
                         context += f"- {r['title']}: {r['snippet']} (Link: {r['link']})\n"
                     context += "\nNow continue your response using this information."
-                    api_messages.append({"role": "user", "content": context})
+                    api_messages.append({"role": "system", "content": context})
                     completion = client.chat.completions.create(model=model, messages=api_messages)
                     response_text = completion.choices[0].message.content
 
